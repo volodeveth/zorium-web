@@ -1,32 +1,58 @@
 'use client';
 
-import { WagmiProvider, createConfig, http } from 'wagmi';
-import { bsc } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RainbowKitProvider, getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { WagmiConfig, createConfig, configureChains } from 'wagmi';
+import { bsc } from 'wagmi/chains';
+import { publicProvider } from 'wagmi/providers/public';
+import { 
+  connectorsForWallets,
+  RainbowKitProvider,
+  darkTheme
+} from '@rainbow-me/rainbowkit';
+import {
+  metaMaskWallet,
+  trustWallet,
+  walletConnectWallet,
+} from '@rainbow-me/rainbowkit/wallets';
 import '@rainbow-me/rainbowkit/styles.css';
 
-const config = createConfig(
-  getDefaultConfig({
-    appName: 'Zorium DApp',
-    projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '', // Потрібно отримати на https://cloud.walletconnect.com/
-    chains: [bsc],
-    transports: {
-      [bsc.id]: http()
-    },
-  })
+const { chains, publicClient } = configureChains(
+  [bsc],
+  [publicProvider()]
 );
+
+const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '';
+
+const connectors = connectorsForWallets([
+  {
+    groupName: 'Recommended',
+    wallets: [
+      metaMaskWallet({ projectId, chains }),
+      trustWallet({ projectId, chains }),
+      walletConnectWallet({ projectId, chains }),
+    ],
+  },
+]);
+
+const wagmiConfig = createConfig({
+  autoConnect: true,
+  connectors,
+  publicClient
+});
 
 const queryClient = new QueryClient();
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <WagmiProvider config={config}>
+    <WagmiConfig config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
+        <RainbowKitProvider 
+          chains={chains}
+          theme={darkTheme()}
+        >
           {children}
         </RainbowKitProvider>
       </QueryClientProvider>
-    </WagmiProvider>
+    </WagmiConfig>
   );
 }
