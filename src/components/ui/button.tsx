@@ -12,10 +12,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <Comp
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-xl px-6 py-3",
-          "text-sm font-semibold tracking-wide transition-all duration-200",
-          "bg-[#B31701] text-white hover:bg-[#D31901] hover:scale-105",
-          "focus:outline-none focus:ring-2 focus:ring-[#B31701] focus:ring-offset-2",
+          "inline-flex items-center justify-center whitespace-nowrap",
+          "rounded-xl px-8 py-3",
+          "text-base font-semibold tracking-wide",
+          "bg-primary hover:bg-primary-hover text-white",
+          "transition-all duration-300",
+          "hover:shadow-glow hover:scale-105",
+          "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background",
           "disabled:opacity-50 disabled:pointer-events-none",
           className
         )}
@@ -25,7 +28,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     );
   }
 );
-
 Button.displayName = "Button";
 
 export { Button };
