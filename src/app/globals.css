@@ -4,37 +4,18 @@
 
 @layer base {
   body {
-    @apply bg-background text-neutral-100;
-    background-image: 
-      radial-gradient(circle at 50% 0%, rgba(179, 23, 1, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 0% 50%, rgba(179, 23, 1, 0.1) 0%, transparent 50%);
+    @apply bg-[#0A0B0D];
   }
 }
 
-@layer components {
-  .card-gradient {
-    background: linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.05) 0%,
-      rgba(255, 255, 255, 0.02) 100%
-    );
-  }
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-[#B31701] to-[#FF2D2D];
+}
 
-  .glass-effect {
-    backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
+.card-gradient {
+  @apply bg-[#151515] border border-[#252525] hover:border-[#B31701]/20;
+}
 
-  .text-gradient {
-    @apply bg-gradient-primary text-transparent bg-clip-text;
-  }
-
-  .hover-scale {
-    @apply transition-transform duration-300 hover:scale-105;
-  }
-
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-glow hover:border-primary/30;
-  }
+.hover-scale {
+  @apply transition-all duration-300 hover:scale-105;
 }
