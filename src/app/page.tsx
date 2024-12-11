@@ -5,6 +5,7 @@ import { useZorium } from "@/hooks/useZorium";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet, Coins, Users, TrendingUp, ArrowRight } from "lucide-react";
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 interface StatsCardProps {
   title: string;
@@ -41,10 +42,32 @@ export default function Home() {
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Stake, earn rewards, and build your referral network in the next generation DeFi platform
           </p>
-          <Button className="text-lg">
-            Connect Wallet
-            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Button>
+          <ConnectButton.Custom>
+            {({
+              account,
+              chain,
+              openAccountModal,
+              openChainModal,
+              openConnectModal,
+              mounted,
+            }) => {
+              if (!mounted) return null;
+              if (account && chain) {
+                return (
+                  <Button onClick={openAccountModal} className="text-lg">
+                    {account.displayName}
+                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                );
+              }
+              return (
+                <Button onClick={openConnectModal} className="text-lg">
+                  Connect Wallet
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              );
+            }}
+          </ConnectButton.Custom>
         </div>
 
         {/* Features Grid */}

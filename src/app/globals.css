@@ -3,19 +3,26 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+  }
+  
   body {
-    @apply bg-[#0A0B0D];
+    @apply bg-background text-foreground;
   }
 }
 
-.text-gradient {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-[#B31701] to-[#FF2D2D];
-}
+@layer components {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-hover;
+  }
 
-.card-gradient {
-  @apply bg-[#151515] border border-[#252525] hover:border-[#B31701]/20;
-}
+  .card-gradient {
+    @apply bg-card border border-neutral-700/50 hover:border-primary/20 transition-all duration-300;
+  }
 
-.hover-scale {
-  @apply transition-all duration-300 hover:scale-105;
+  .hover-scale {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
 }
