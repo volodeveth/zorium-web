@@ -16,17 +16,19 @@ const STAKING_PERIODS = [
   { days: 365, multiplier: 300 },
 ];
 
+interface PeriodCardProps {
+  days: number;
+  multiplier: number;
+  selected: boolean;
+  onClick: () => void;
+}
+
 const PeriodCard = ({ 
   days, 
   multiplier, 
   selected, 
   onClick 
-}: { 
-  days: number; 
-  multiplier: number; 
-  selected: boolean;
-  onClick: () => void;
-}) => (
+}: PeriodCardProps) => (
   <Card 
     className={`cursor-pointer transition-all duration-300 ${
       selected 
@@ -52,10 +54,30 @@ const PeriodCard = ({
 
 export default function Staking() {
   const { address } = useAccount();
-  const { userStats } = useZorium();
+  const { userStats, staking } = useZorium();
   const [amount, setAmount] = React.useState('');
   const [selectedPeriod, setSelectedPeriod] = React.useState<number>(0);
   const [isStaking, setIsStaking] = React.useState(false);
+
+  const handleStake = async () => {
+    if (!amount || Number(amount) < 100 || isStaking) return;
+    
+    setIsStaking(true);
+    try {
+      await staking.stakeTokens(amount, selectedPeriod);
+    } finally {
+      setIsStaking(false);
+    }
+  };
+
+  const getLevelBonus = (level: string | undefined) => {
+    switch(level) {
+      case 'SILVER': return '10';
+      case 'GOLD': return '25';
+      case 'PLATINUM': return '50';
+      default: return '0';
+    }
+  };
 
   if (!address) {
     return (
@@ -87,7 +109,7 @@ export default function Staking() {
           </div>
 
           {/* Current Stake Info */}
-          {userStats?.stakedAmount !== '0' ? (
+          {userStats && userStats.stakedAmount !== '0' && (
             <Card className="mb-8">
               <div className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Active Stake</h2>
@@ -107,7 +129,7 @@ export default function Staking() {
                 </div>
               </div>
             </Card>
-          ) : null}
+          )}
 
           {/* New Stake Form */}
           <Card>
@@ -182,9 +204,7 @@ export default function Staking() {
                     <div>
                       <p className="text-gray-400">Level Bonus</p>
                       <p className="font-medium">
-                        +{userStats?.level === 'BRONZE' ? '0' : 
-                           userStats?.level === 'SILVER' ? '10' :
-                           userStats?.level === 'GOLD' ? '25' : '50'}%
+                        +{getLevelBonus(userStats?.level)}%
                       </p>
                     </div>
                   </div>
@@ -194,11 +214,7 @@ export default function Staking() {
               <Button 
                 className="w-full"
                 disabled={!amount || Number(amount) < 100 || isStaking}
-                onClick={() => {
-                  setIsStaking(true);
-                  // TODO: Implement staking logic
-                  setTimeout(() => setIsStaking(false), 2000);
-                }}
+                onClick={handleStake}
               >
                 {isStaking ? 'Staking...' : 'Stake ZORIUM'}
               </Button>
