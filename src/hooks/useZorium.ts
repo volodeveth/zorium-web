@@ -1,6 +1,6 @@
 import { useContractRead, useContractWrite, useAccount, useWaitForTransaction } from 'wagmi';
 import { ZORIUM_CONTRACT_ADDRESS, ZORIUM_ABI } from '@/constants/contract';
-import { parseEther, formatEther } from 'viem';
+import { parseEther, formatEther, Address, isAddress } from 'viem';
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/useToast';
 
@@ -153,10 +153,14 @@ export function useZorium() {
   const referralActions = {
     register: async (referrerAddress: string): Promise<boolean> => {
       try {
+        if (!isAddress(referrerAddress)) {
+          throw new Error('Invalid referrer address');
+        }
+
         showToast('Registering referral...', 'loading');
         
         const tx = await registerReferral?.({ 
-          args: [referrerAddress] 
+          args: [referrerAddress as Address] 
         });
         
         if (!tx) throw new Error('Failed to create referral transaction');
