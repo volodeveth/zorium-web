@@ -2,9 +2,11 @@
 
 import React from "react";
 import { useZorium } from "@/hooks/useZorium";
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAccount } from 'wagmi';
+import Link from 'next/link';
+import { Card } from "@/components/ui/card";
 import { Wallet, Coins, Users, TrendingUp, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface StatsCardProps {
   title: string;
@@ -26,6 +28,7 @@ const StatsCard = ({ title, value, icon }: StatsCardProps) => (
 
 export default function Home() {
   const { stats } = useZorium();
+  const { isConnected } = useAccount();
 
   return (
     <main className="min-h-screen bg-[#0A0B0D]">
@@ -38,37 +41,22 @@ export default function Home() {
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Stake, earn rewards, and build your referral network in the next generation DeFi platform
           </p>
-          <ConnectButton.Custom>
-            {({
-              account,
-              chain,
-              openAccountModal,
-              openChainModal,
-              openConnectModal,
-              mounted,
-            }) => {
-              if (!mounted) return null;
-              return (
-                <div className="icon-container inline-block cursor-pointer">
-                  <button
-                    onClick={account ? openAccountModal : openConnectModal}
-                    className="flex items-center gap-2 px-6 py-3 text-lg text-white font-semibold"
-                  >
-                    {account ? account.displayName : "Connect Wallet"}
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-              );
-            }}
-          </ConnectButton.Custom>
+          {isConnected ? (
+            <Link href="/dashboard">
+              <Button size="lg" className="icon-container">
+                Go to Dashboard
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
+          ) : null}
         </div>
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-          <div className="bg-[#151515]/90 backdrop-blur-sm border border-gray-800/50 hover:border-[#B31701]/30 rounded-xl p-6">
+          <Card className="p-6 bg-[#151515]/90 backdrop-blur-sm">
             <div className="mb-6">
               <div className="icon-container mb-4">
-                <Coins className="w-full h-full text-white" />
+                <Coins className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-100">Staking</h3>
               <p className="text-gray-400">Earn rewards by staking your ZORIUM tokens</p>
@@ -87,12 +75,12 @@ export default function Home() {
                 Up to 300% reward multiplier
               </li>
             </ul>
-          </div>
+          </Card>
 
-          <div className="bg-[#151515]/90 backdrop-blur-sm border border-gray-800/50 hover:border-[#B31701]/30 rounded-xl p-6">
+          <Card className="p-6 bg-[#151515]/90 backdrop-blur-sm">
             <div className="mb-6">
               <div className="icon-container mb-4">
-                <Users className="w-full h-full text-white" />
+                <Users className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-100">Referral Program</h3>
               <p className="text-gray-400">Multiply your earnings through our referral system</p>
@@ -111,12 +99,12 @@ export default function Home() {
                 Additional bonuses for active referrers
               </li>
             </ul>
-          </div>
+          </Card>
 
-          <div className="bg-[#151515]/90 backdrop-blur-sm border border-gray-800/50 hover:border-[#B31701]/30 rounded-xl p-6">
+          <Card className="p-6 bg-[#151515]/90 backdrop-blur-sm">
             <div className="mb-6">
               <div className="icon-container mb-4">
-                <TrendingUp className="w-full h-full text-white" />
+                <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-gray-100">User Levels</h3>
               <p className="text-gray-400">Unlock better rewards as you level up</p>
@@ -135,7 +123,7 @@ export default function Home() {
                 Gold: 10M+ ZORIUM (25% bonus)
               </li>
             </ul>
-          </div>
+          </Card>
         </div>
 
         {/* Stats Grid */}
