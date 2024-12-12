@@ -35,30 +35,30 @@ export function useZorium() {
   const { showToast } = useToast();
   const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
 
-  // Базові читання з контракту
+  // Base contract reads
   const { data: totalStaked } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
-    functionName: 'totalStaked',
-  }) as { data: bigint | undefined };
+    functionName: 'totalStaked' as const,
+  });
 
   const { data: rewardPool } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
-    functionName: 'rewardPool',
-  }) as { data: bigint | undefined };
+    functionName: 'rewardPool' as const,
+  });
 
   const { data: totalBurned } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
-    functionName: 'totalBurned',
-  }) as { data: bigint | undefined };
+    functionName: 'totalBurned' as const,
+  });
 
-  // Стейкінг
-  const { write: createStake, data: stakeTx } = useContractWrite({
+  // Staking
+  const { writeAsync: createStake, data: stakeTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
-    functionName: 'createStake',
+    functionName: 'createStake' as const,
   });
 
   const { isLoading: isStakeLoading, isSuccess: isStakeSuccess } = useWaitForTransaction({
@@ -66,44 +66,46 @@ export function useZorium() {
   });
 
   // Claim rewards
-  const { data: claimTx, write: claimRewards } = useContractWrite({
+  const { data: claimTx, writeAsync: claimRewards } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
-    functionName: '_claimReward',
+    functionName: '_claimReward' as const,
   });
 
   const { isLoading: isClaimLoading, isSuccess: isClaimSuccess } = useWaitForTransaction({
     hash: claimTx?.hash,
   });
 
-  // Реферальна система
-  const { write: registerReferral, data: referralTx } = useContractWrite({
+  // Referral system
+  const { writeAsync: registerReferral, data: referralTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
-    functionName: 'registerReferral',
+    functionName: 'registerReferral' as const,
   });
 
   const { isLoading: isReferralLoading, isSuccess: isReferralSuccess } = useWaitForTransaction({
     hash: referralTx?.hash,
   });
 
-  // Отримання інформації про стейк користувача
+  // Get user stake info
   const { data: userStakeInfo } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
-    functionName: 'getUserStakeInfo',
+    functionName: 'getUserStakeInfo' as const,
     args: address ? [address] : undefined,
     enabled: !!address,
   });
 
-  // Стейкінг функції
-  const stakeTokens = async (amount: string, periodIndex: number) => {
+  // Staking functions
+  const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean> => {
     try {
       showToast('Initiating staking transaction...', 'loading');
       
-      await createStake({ 
+      const tx = await createStake?.({ 
         args: [parseEther(amount), BigInt(periodIndex)],
       });
+      
+      if (!tx) throw new Error('Failed to create stake transaction');
       
       showToast('Please confirm the transaction in your wallet', 'info');
       
@@ -122,12 +124,13 @@ export function useZorium() {
     }
   };
 
-  // Claim rewards функція
-  const claimStakingRewards = async () => {
+  // Claim rewards function
+  const claimStakingRewards = async (): Promise<boolean> => {
     try {
       showToast('Claiming rewards...', 'loading');
       
-      await claimRewards();
+      const tx = await claimRewards?.();
+      if (!tx) throw new Error('Failed to create claim transaction');
       
       showToast('Please confirm the claim transaction', 'info');
       
@@ -146,15 +149,17 @@ export function useZorium() {
     }
   };
 
-  // Реферальні функції
+  // Referral functions
   const referralActions = {
-    register: async (referrerAddress: string) => {
+    register: async (referrerAddress: string): Promise<boolean> => {
       try {
         showToast('Registering referral...', 'loading');
         
-        await registerReferral({ 
+        const tx = await registerReferral?.({ 
           args: [referrerAddress] 
         });
+        
+        if (!tx) throw new Error('Failed to create referral transaction');
         
         showToast('Please confirm the referral registration', 'info');
         
@@ -173,16 +178,14 @@ export function useZorium() {
       }
     },
 
-    getReferralsInfo: useCallback(async () => {
+    getReferralsInfo: useCallback(async (): Promise<ReferralInfo[]> => {
       if (!address) return [];
       
       setIsLoadingReferrals(true);
       showToast('Loading referrals...', 'loading');
       
       try {
-        // Логіка отримання інформації про рефералів
-        // ... (залишається без змін)
-        
+        // Implement referral info fetching logic here
         return [];
       } catch (error) {
         showToast('Failed to load referrals', 'error');
@@ -192,19 +195,19 @@ export function useZorium() {
       }
     }, [address, showToast]),
 
-    generateReferralLink: (baseUrl: string) => {
+    generateReferralLink: (baseUrl: string): string => {
       if (!address) return '';
       return `${baseUrl}/ref/${address}`;
     },
   };
 
-  // Форматування та розрахунки
-  const formatValue = (value: bigint | undefined) => {
+  // Formatting and calculations
+  const formatValue = (value: bigint | undefined): string => {
     if (!value) return '0';
     return formatEther(value);
   };
 
-  // Розрахунок рівня користувача
+  // Calculate user level
   const calculateUserLevel = (stakedAmount: string): UserStats['level'] => {
     const amount = parseFloat(stakedAmount);
     if (amount >= 100_000_000) return 'PLATINUM';
@@ -213,15 +216,27 @@ export function useZorium() {
     return 'BRONZE';
   };
 
+  // Process user stats
+  const userStats: UserStats | undefined = userStakeInfo ? {
+    stakedAmount: formatValue(userStakeInfo[0] as bigint),
+    lockPeriod: Number(userStakeInfo[2]),
+    referralCount: 0, // Implement proper referral count
+    pendingRewards: '0', // Implement pending rewards calculation
+    level: calculateUserLevel(formatValue(userStakeInfo[0] as bigint)),
+    levelProgress: 0, // Implement level progress calculation
+    nextLevelThreshold: '1000000', // Implement next level threshold
+    totalReferralRewards: '0', // Implement total referral rewards
+  } : undefined;
+
   return {
-    // Базова статистика
+    // Base statistics
     stats: {
-      totalStaked: formatValue(totalStaked),
-      rewardPool: formatValue(rewardPool),
-      totalBurned: formatValue(totalBurned),
+      totalStaked: formatValue(totalStaked as bigint),
+      rewardPool: formatValue(rewardPool as bigint),
+      totalBurned: formatValue(totalBurned as bigint),
     },
     
-    // Стейкінг функції
+    // Staking functions
     staking: {
       stakeTokens,
       claimStakingRewards,
@@ -231,7 +246,7 @@ export function useZorium() {
       isClaimSuccess,
     },
     
-    // Реферальна система
+    // Referral system
     referral: {
       isLoadingReferrals,
       isReferralLoading,
@@ -239,10 +254,10 @@ export function useZorium() {
       ...referralActions,
     },
     
-    // Інформація про користувача
+    // User information
     userStats,
     
-    // Помилки
+    // Errors
     errors: {
       hasError: false,
       errorMessage: '',
