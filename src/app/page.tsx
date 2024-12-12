@@ -2,10 +2,9 @@
 
 import React from "react";
 import { useZorium } from "@/hooks/useZorium";
-import { Button } from "@/components/ui/button";
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet, Coins, Users, TrendingUp, ArrowRight } from "lucide-react";
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 interface StatsCardProps {
   title: string;
@@ -14,29 +13,26 @@ interface StatsCardProps {
 }
 
 const StatsCard = ({ title, value, icon }: StatsCardProps) => (
-  <Card className="card-gradient">
-    <CardContent className="p-6">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-gradient-to-br from-[#B31701] to-[#FF2D2D] rounded-xl hover-scale">
-          {icon}
-        </div>
-        <div>
-          <h3 className="text-gray-400 font-medium mb-1">{title}</h3>
-          <p className="text-2xl font-bold text-white">{value}</p>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
+  <div className="stats-card">
+    <div className="icon-container">
+      {icon}
+    </div>
+    <div>
+      <h3 className="text-gray-400 font-medium mb-1">{title}</h3>
+      <p className="text-2xl font-bold text-white">{value}</p>
+    </div>
+  </div>
 );
 
 export default function Home() {
   const { stats } = useZorium();
+
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-[#0A0B0D]">
       <div className="container mx-auto px-4 py-12">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-6xl font-bold mb-6 text-gradient">
+          <h1 className="text-6xl font-bold mb-6 gradient-text">
             Welcome to ZORIUM
           </h1>
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
@@ -52,19 +48,16 @@ export default function Home() {
               mounted,
             }) => {
               if (!mounted) return null;
-              if (account && chain) {
-                return (
-                  <Button onClick={openAccountModal} className="text-lg">
-                    {account.displayName}
-                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                );
-              }
               return (
-                <Button onClick={openConnectModal} className="text-lg">
-                  Connect Wallet
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
+                <div className="icon-container inline-block cursor-pointer">
+                  <button
+                    onClick={account ? openAccountModal : openConnectModal}
+                    className="flex items-center gap-2 px-6 py-3 text-lg text-white font-semibold"
+                  >
+                    {account ? account.displayName : "Connect Wallet"}
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
               );
             }}
           </ConnectButton.Custom>
@@ -72,89 +65,77 @@ export default function Home() {
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-          <Card className="card-gradient">
-            <CardHeader>
-              <div className="w-16 h-16 bg-gradient-to-br from-[#B31701] to-[#FF2D2D] rounded-2xl p-3 mb-4 hover-scale">
+          <div className="bg-[#151515]/90 backdrop-blur-sm border border-gray-800/50 hover:border-[#B31701]/30 rounded-xl p-6">
+            <div className="mb-6">
+              <div className="icon-container mb-4">
                 <Coins className="w-full h-full text-white" />
               </div>
-              <CardTitle className="text-gray-100">Staking</CardTitle>
-              <CardDescription>
-                Earn rewards by staking your ZORIUM tokens
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-1.5 h-1.5 bg-[#B31701] rounded-full"></div>
-                  Minimum stake: 100 ZORIUM
-                </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-1.5 h-1.5 bg-[#B31701] rounded-full"></div>
-                  Lock periods: 30 to 365 days
-                </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-1.5 h-1.5 bg-[#B31701] rounded-full"></div>
-                  Up to 300% reward multiplier
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
+              <h3 className="text-2xl font-bold text-gray-100">Staking</h3>
+              <p className="text-gray-400">Earn rewards by staking your ZORIUM tokens</p>
+            </div>
+            <ul className="space-y-3">
+              <li className="list-item">
+                <div className="list-dot"></div>
+                Minimum stake: 100 ZORIUM
+              </li>
+              <li className="list-item">
+                <div className="list-dot"></div>
+                Lock periods: 30 to 365 days
+              </li>
+              <li className="list-item">
+                <div className="list-dot"></div>
+                Up to 300% reward multiplier
+              </li>
+            </ul>
+          </div>
 
-          <Card className="card-gradient">
-            <CardHeader>
-              <div className="w-16 h-16 bg-gradient-to-br from-[#B31701] to-[#FF2D2D] rounded-2xl p-3 mb-4 hover-scale">
+          <div className="bg-[#151515]/90 backdrop-blur-sm border border-gray-800/50 hover:border-[#B31701]/30 rounded-xl p-6">
+            <div className="mb-6">
+              <div className="icon-container mb-4">
                 <Users className="w-full h-full text-white" />
               </div>
-              <CardTitle className="text-gray-100">Referral Program</CardTitle>
-              <CardDescription>
-                Multiply your earnings through our referral system
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-1.5 h-1.5 bg-[#B31701] rounded-full"></div>
-                  Up to 3 levels of referrals
-                </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-1.5 h-1.5 bg-[#B31701] rounded-full"></div>
-                  15% reward from direct referrals
-                </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-1.5 h-1.5 bg-[#B31701] rounded-full"></div>
-                  Additional bonuses for active referrers
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
+              <h3 className="text-2xl font-bold text-gray-100">Referral Program</h3>
+              <p className="text-gray-400">Multiply your earnings through our referral system</p>
+            </div>
+            <ul className="space-y-3">
+              <li className="list-item">
+                <div className="list-dot"></div>
+                Up to 3 levels of referrals
+              </li>
+              <li className="list-item">
+                <div className="list-dot"></div>
+                15% reward from direct referrals
+              </li>
+              <li className="list-item">
+                <div className="list-dot"></div>
+                Additional bonuses for active referrers
+              </li>
+            </ul>
+          </div>
 
-          <Card className="card-gradient">
-            <CardHeader>
-              <div className="w-16 h-16 bg-gradient-to-br from-[#B31701] to-[#FF2D2D] rounded-2xl p-3 mb-4 hover-scale">
+          <div className="bg-[#151515]/90 backdrop-blur-sm border border-gray-800/50 hover:border-[#B31701]/30 rounded-xl p-6">
+            <div className="mb-6">
+              <div className="icon-container mb-4">
                 <TrendingUp className="w-full h-full text-white" />
               </div>
-              <CardTitle className="text-gray-100">User Levels</CardTitle>
-              <CardDescription>
-                Unlock better rewards as you level up
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-1.5 h-1.5 bg-[#B31701] rounded-full"></div>
-                  Bronze: Start Level
-                </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-1.5 h-1.5 bg-[#B31701] rounded-full"></div>
-                  Silver: 1M+ ZORIUM (10% bonus)
-                </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <div className="w-1.5 h-1.5 bg-[#B31701] rounded-full"></div>
-                  Gold: 10M+ ZORIUM (25% bonus)
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
+              <h3 className="text-2xl font-bold text-gray-100">User Levels</h3>
+              <p className="text-gray-400">Unlock better rewards as you level up</p>
+            </div>
+            <ul className="space-y-3">
+              <li className="list-item">
+                <div className="list-dot"></div>
+                Bronze: Start Level
+              </li>
+              <li className="list-item">
+                <div className="list-dot"></div>
+                Silver: 1M+ ZORIUM (10% bonus)
+              </li>
+              <li className="list-item">
+                <div className="list-dot"></div>
+                Gold: 10M+ ZORIUM (25% bonus)
+              </li>
+            </ul>
+          </div>
         </div>
 
         {/* Stats Grid */}

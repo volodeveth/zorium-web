@@ -2,27 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --primary: #B31701;
+  --primary-hover: #FF2D2D;
+  --background: #0A0B0D;
+  --card-bg: #151515;
+}
+
 @layer base {
-  :root {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-  }
-  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#0A0B0D] text-white min-h-screen overflow-x-hidden;
   }
 }
 
 @layer components {
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-hover;
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#B31701] to-[#FF2D2D];
   }
 
-  .card-gradient {
-    @apply bg-card border border-neutral-700/50 hover:border-primary/20 transition-all duration-300;
+  .card {
+    @apply bg-[#151515]/90 backdrop-blur-sm 
+           border border-gray-800/50 rounded-xl
+           transition-all duration-300
+           hover:border-[#B31701]/30
+           hover:shadow-lg hover:shadow-[#B31701]/10;
   }
 
-  .hover-scale {
-    @apply transition-transform duration-300 hover:scale-105;
+  .icon-container {
+    @apply bg-gradient-to-br from-[#B31701] to-[#FF2D2D]
+           p-4 rounded-xl shadow-lg
+           transition-transform duration-300
+           hover:scale-105;
   }
+
+  .list-item {
+    @apply flex items-center gap-3 text-gray-300;
+  }
+
+  .list-dot {
+    @apply w-1.5 h-1.5 bg-[#B31701] rounded-full;
+  }
+
+  .stats-card {
+    @apply flex items-center gap-4 p-6
+           bg-[#151515]/80 backdrop-blur-sm
+           border border-gray-800/50 rounded-xl
+           transition-all duration-300
+           hover:border-[#B31701]/20
+           hover:shadow-lg hover:shadow-[#B31701]/5;
+  }
+}
+
+/* Анімації */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

@@ -1,4 +1,13 @@
 {
+  "name": "zorium-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
   "dependencies": {
     "@radix-ui/react-dialog": "1.0.5",
     "@radix-ui/react-label": "2.0.2",
@@ -6,22 +15,26 @@
     "@rainbow-me/rainbowkit": "1.0.11",
     "class-variance-authority": "0.7.0",
     "clsx": "2.0.0",
+    "framer-motion": "^10.18.0",
     "lucide-react": "0.260.0",
     "next": "13.5.6",
+    "pino-pretty": "^10.2.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-portal": "^4.2.2",
+    "react-remove-scroll": "^2.6.0",
     "tailwind-merge": "2.0.0",
     "viem": "1.19.9",
-    "wagmi": "1.4.7",
-    "pino-pretty": "^10.2.3"
+    "wagmi": "1.4.7"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "typescript": "^5",
+    "@types/react-portal": "^4.0.7",
     "autoprefixer": "^10",
     "postcss": "^8",
-    "tailwindcss": "^3"
+    "tailwindcss": "^3",
+    "typescript": "^5"
   }
 }
