@@ -35,5 +35,41 @@ export const ZORIUM_ABI = [
     outputs: [{ type: "uint256", name: "" }],
     stateMutability: "view",
     type: "function"
+  },
+  {
+    inputs: [
+      { name: "amount", type: "uint256" },
+      { name: "periodIndex", type: "uint256" }
+    ],
+    name: "createStake",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function"
+  },
+  {
+    inputs: [],
+    name: "_claimReward",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function"
+  },
+  {
+    inputs: [{ name: "referrer", type: "address" }],
+    name: "registerReferral",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function"
+  },
+  {
+    inputs: [{ name: "user", type: "address" }],
+    name: "getUserStakeInfo",
+    outputs: [
+      { name: "amount", type: "uint256" },
+      { name: "since", type: "uint256" },
+      { name: "lockPeriod", type: "uint256" },
+      { name: "level", type: "uint8" }
+    ],
+    stateMutability: "view",
+    type: "function"
   }
 ] as const;
