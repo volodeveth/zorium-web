@@ -11,25 +11,25 @@
 
 @layer base {
   body {
-    @apply bg-[#0A0B0D] text-white min-h-screen overflow-x-hidden;
+    @apply bg-background text-white min-h-screen overflow-x-hidden;
   }
 }
 
 @layer components {
   .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#B31701] to-[#FF2D2D];
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-hover;
   }
 
   .card {
-    @apply bg-[#151515]/90 backdrop-blur-sm 
+    @apply bg-card/90 backdrop-blur-sm 
            border border-gray-800/50 rounded-xl
            transition-all duration-300
-           hover:border-[#B31701]/30
-           hover:shadow-lg hover:shadow-[#B31701]/10;
+           hover:border-primary/30
+           hover:shadow-lg hover:shadow-primary/10;
   }
 
   .icon-container {
-    @apply bg-gradient-to-br from-[#B31701] to-[#FF2D2D]
+    @apply bg-gradient-to-br from-primary to-primary-hover
            p-4 rounded-xl shadow-lg
            transition-transform duration-300
            hover:scale-105;
@@ -40,25 +40,81 @@
   }
 
   .list-dot {
-    @apply w-1.5 h-1.5 bg-[#B31701] rounded-full;
+    @apply w-1.5 h-1.5 bg-primary rounded-full;
   }
 
   .stats-card {
     @apply flex items-center gap-4 p-6
-           bg-[#151515]/80 backdrop-blur-sm
+           bg-card/80 backdrop-blur-sm
            border border-gray-800/50 rounded-xl
            transition-all duration-300
-           hover:border-[#B31701]/20
-           hover:shadow-lg hover:shadow-[#B31701]/5;
+           hover:border-primary/20
+           hover:shadow-lg hover:shadow-primary/5;
   }
 }
 
-/* Анімації */
+/* Animations */
 .fade-in {
   animation: fadeIn 0.5s ease-in;
+}
+
+.animate-slide-in {
+  animation: slideInRight 0.5s ease forwards;
+}
+
+.animate-slide-up {
+  animation: slideInBottom 0.5s ease forwards;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s ease infinite;
+}
+
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
 }
 
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
 }

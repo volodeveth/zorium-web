@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import '@/styles/animations.css';
 import { Providers } from './providers';
 import { Header } from '@/components/layout/Header';
 import { PageTransition } from '@/components/transitions/page-transition';
@@ -10,7 +11,7 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'ZORIUM - Next Generation DeFi Platform',
   description: 'Stake, earn rewards, and build your referral network with ZORIUM',
-  themeColor: '#282c34',
+  themeColor: '#0A0B0D',
   icons: {
     icon: '/favicon.ico',
   },
@@ -36,12 +37,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-[#282c34] text-white antialiased`}>
+      <body className={`${inter.className} min-h-screen bg-background text-white antialiased`}>
         <Providers>
           <Header />
           <PageTransition>
-            <main className="pt-16 min-h-screen">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <main className="animate-fade-in pt-16 min-h-screen">
+              <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 {children}
               </div>
             </main>
