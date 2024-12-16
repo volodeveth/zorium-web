@@ -29,6 +29,13 @@ const StatsCard = ({ title, value, icon }: StatsCardProps) => (
 export default function Home() {
   const { stats } = useZorium();
   const { isConnected } = useAccount();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <main className="min-h-screen bg-[#0A0B0D]">
@@ -41,14 +48,18 @@ export default function Home() {
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Stake, earn rewards, and build your referral network in the next generation DeFi platform
           </p>
-          {isConnected ? (
-            <Link href="/dashboard">
-              <Button size="lg" className="icon-container">
-                Go to Dashboard
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
-          ) : null}
+          {isConnected && (
+            <div>
+              <Link href="/dashboard" passHref legacyBehavior>
+                <Button size="lg" className="icon-container" asChild>
+                  <a>
+                    Go to Dashboard
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </a>
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Features Grid */}

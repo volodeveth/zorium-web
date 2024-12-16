@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useCallback, useState } from 'react';
+'use client';
+
+import React, { createContext, useContext, useCallback, useState, useEffect } from 'react';
 import { Loader2, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
@@ -15,10 +17,19 @@ interface ToastContextType {
   removeToast: (id: string) => void;
 }
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
+const ToastContext = createContext<ToastContextType>({
+  showToast: () => {},
+  removeToast: () => {},
+});
 
 export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const showToast = useCallback((message: string, type: ToastType) => {
     const id = Math.random().toString(36).slice(2);
@@ -35,10 +46,22 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
     setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
   }, []);
 
+  const value = React.useMemo(
+    () => ({
+      showToast,
+      removeToast,
+    }),
+    [showToast, removeToast]
+  );
+
+  if (!mounted) {
+    return <>{children}</>;
+  }
+
   return (
-    <ToastContext.Provider value={{ showToast, removeToast }}>
+    <ToastContext.Provider value={value}>
       {children}
-      {typeof window !== 'undefined' &&
+      {mounted && typeof window !== 'undefined' &&
         createPortal(
           <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
             {toasts.map((toast) => (
@@ -102,10 +125,4 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
   );
 };
 
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (context === undefined) {
-    throw new Error('useToast must be used within a ToastProvider');
-  }
-  return context;
-};
+export const useToast = () => useContext(ToastContext);

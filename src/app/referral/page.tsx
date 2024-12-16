@@ -78,7 +78,7 @@ const ReferralLevelCard = ({ level, percent, icon: Icon }: {
 export default function Referral() {
   const { address } = useAccount();
   const [copied, setCopied] = React.useState(false);
-  const referralLink = `https://zorium.network/ref/${address}`;
+  const referralLink = `https://zorium.xyz/ref/${address}`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);

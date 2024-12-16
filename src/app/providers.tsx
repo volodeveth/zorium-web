@@ -1,12 +1,11 @@
 'use client';
 
-import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { getDefaultWallets, RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { configureChains, createConfig, WagmiConfig } from 'wagmi';
 import { publicProvider } from 'wagmi/providers/public';
 import '@rainbow-me/rainbowkit/styles.css';
 import { ToastProvider } from '@/hooks/useToast';
 
-// Конфігурація мережі Zora
 const zora = {
   id: 7777777,
   name: 'Zora',
@@ -27,7 +26,7 @@ const zora = {
 };
 
 const { chains, publicClient } = configureChains(
-  [zora], // Використовуємо Zora замість BSC
+  [zora],
   [publicProvider()]
 );
 
@@ -48,7 +47,14 @@ const wagmiConfig = createConfig({
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiConfig config={wagmiConfig}>
-      <RainbowKitProvider chains={chains}>
+      <RainbowKitProvider 
+        chains={chains} 
+        theme={darkTheme({
+          accentColor: '#B31701',
+          borderRadius: 'large',
+        })}
+        coolMode
+      >
         <ToastProvider>
           {children}
         </ToastProvider>

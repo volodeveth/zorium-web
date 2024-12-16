@@ -2,7 +2,7 @@ import { useContractRead, useContractWrite, useAccount, useWaitForTransaction } 
 import { ZORIUM_CONTRACT_ADDRESS, ZORIUM_ABI } from '@/constants/contract';
 import { parseEther, formatEther, Address, isAddress } from 'viem';
 import { useState, useCallback } from 'react';
-import { useToast } from '@/hooks/useToast';
+import { useToast, ToastType } from '@/hooks/useToast';
 
 export interface ReferralInfo {
   address: string;
@@ -34,6 +34,12 @@ export function useZorium() {
   const { address } = useAccount();
   const { showToast } = useToast();
   const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
+
+  const showToastSafe = useCallback((message: string, type: ToastType) => {
+    if (showToast) {
+      showToast(message, type);
+    }
+  }, [showToast]);
 
   // Base contract reads
   const { data: totalStaked } = useContractRead({
@@ -99,7 +105,7 @@ export function useZorium() {
   // Staking functions
   const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean> => {
     try {
-      showToast('Initiating staking transaction...', 'loading');
+      showToastSafe('Initiating staking transaction...', 'loading');
       
       const tx = await createStake?.({ 
         args: [parseEther(amount), BigInt(periodIndex)],
@@ -107,16 +113,16 @@ export function useZorium() {
       
       if (!tx) throw new Error('Failed to create stake transaction');
       
-      showToast('Please confirm the transaction in your wallet', 'info');
+      showToastSafe('Please confirm the transaction in your wallet', 'info');
       
       if (isStakeSuccess) {
-        showToast('Tokens staked successfully!', 'success');
+        showToastSafe('Tokens staked successfully!', 'success');
         return true;
       }
       
       return false;
     } catch (error) {
-      showToast(
+      showToastSafe(
         error instanceof Error ? error.message : 'Failed to stake tokens',
         'error'
       );
@@ -127,21 +133,21 @@ export function useZorium() {
   // Claim rewards function
   const claimStakingRewards = async (): Promise<boolean> => {
     try {
-      showToast('Claiming rewards...', 'loading');
+      showToastSafe('Claiming rewards...', 'loading');
       
       const tx = await claimRewards?.();
       if (!tx) throw new Error('Failed to create claim transaction');
       
-      showToast('Please confirm the claim transaction', 'info');
+      showToastSafe('Please confirm the claim transaction', 'info');
       
       if (isClaimSuccess) {
-        showToast('Rewards claimed successfully!', 'success');
+        showToastSafe('Rewards claimed successfully!', 'success');
         return true;
       }
       
       return false;
     } catch (error) {
-      showToast(
+      showToastSafe(
         error instanceof Error ? error.message : 'Failed to claim rewards',
         'error'
       );
@@ -157,7 +163,7 @@ export function useZorium() {
           throw new Error('Invalid referrer address');
         }
 
-        showToast('Registering referral...', 'loading');
+        showToastSafe('Registering referral...', 'loading');
         
         const tx = await registerReferral?.({ 
           args: [referrerAddress as Address] 
@@ -165,16 +171,16 @@ export function useZorium() {
         
         if (!tx) throw new Error('Failed to create referral transaction');
         
-        showToast('Please confirm the referral registration', 'info');
+        showToastSafe('Please confirm the referral registration', 'info');
         
         if (isReferralSuccess) {
-          showToast('Referral registered successfully!', 'success');
+          showToastSafe('Referral registered successfully!', 'success');
           return true;
         }
         
         return false;
       } catch (error) {
-        showToast(
+        showToastSafe(
           error instanceof Error ? error.message : 'Failed to register referral',
           'error'
         );
@@ -186,18 +192,18 @@ export function useZorium() {
       if (!address) return [];
       
       setIsLoadingReferrals(true);
-      showToast('Loading referrals...', 'loading');
+      showToastSafe('Loading referrals...', 'loading');
       
       try {
         // Implement referral info fetching logic here
         return [];
       } catch (error) {
-        showToast('Failed to load referrals', 'error');
+        showToastSafe('Failed to load referrals', 'error');
         return [];
       } finally {
         setIsLoadingReferrals(false);
       }
-    }, [address, showToast]),
+    }, [address, showToastSafe]),
 
     generateReferralLink: (baseUrl: string): string => {
       if (!address) return '';
@@ -224,12 +230,12 @@ export function useZorium() {
   const userStats: UserStats | undefined = userStakeInfo ? {
     stakedAmount: formatValue(userStakeInfo[0] as bigint),
     lockPeriod: Number(userStakeInfo[2]),
-    referralCount: 0, // Implement proper referral count
-    pendingRewards: '0', // Implement pending rewards calculation
+    referralCount: 0,
+    pendingRewards: '0',
     level: calculateUserLevel(formatValue(userStakeInfo[0] as bigint)),
-    levelProgress: 0, // Implement level progress calculation
-    nextLevelThreshold: '1000000', // Implement next level threshold
-    totalReferralRewards: '0', // Implement total referral rewards
+    levelProgress: 0,
+    nextLevelThreshold: '1000000',
+    totalReferralRewards: '0',
   } : undefined;
 
   return {
