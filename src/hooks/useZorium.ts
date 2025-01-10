@@ -1,4 +1,5 @@
-import { useContractRead, useContractWrite, useAccount, useWaitForTransaction, readContract } from 'wagmi';
+import { useContractRead, useContractWrite, useAccount, useWaitForTransaction } from 'wagmi';
+import { readContract } from '@wagmi/core';
 import { ZORIUM_CONTRACT_ADDRESS, ZORIUM_ABI } from '@/constants/contract';
 import { parseEther, formatEther, isAddress } from 'viem';
 import { useState, useCallback, useEffect } from 'react';

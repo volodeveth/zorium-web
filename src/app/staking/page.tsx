@@ -213,10 +213,10 @@ export default function Staking() {
           )}
 
           {/* Current Stake Status */}
-          {hasActiveStake ? (
+          {hasActiveStake && userStats?.stakeInfo ? (
             <div className="space-y-6 mb-8">
               <StakeStats
-                amount={userStats.stakeInfo.totalAmount}
+                amount={userStats.stakeInfo.totalAmount || '0'}
                 multiplier={userStats.stakeInfo.multiplier}
                 periodDays={Math.floor(userStats.stakeInfo.lockPeriod / 86400)}
                 pendingRewards={userStats.stakeInfo.pendingRewards}
@@ -244,7 +244,7 @@ export default function Staking() {
                   )}
                 </div>
 
-                {isStakeLocked && (
+                {isStakeLocked && userStats.stakeInfo && (
                   <div className="mt-4">
                     <UnlockTimer
                       timeRemaining={userStats.stakeInfo.timeRemaining}
@@ -279,9 +279,20 @@ export default function Staking() {
                 progress={userStats.levelProgress}
                 currentAmount={userStats.totalStaked}
                 nextThreshold={userStats.nextLevelThreshold}
-                bonus={userStats.stakeInfo?.levelBonus}
+                bonus={userStats.stakeInfo?.levelBonus ?? 0}
               />
             </div>
+          )}
+
+          {/* Rewards Info */}
+          {Number(amount) >= 100 && (
+            <EstimatedRewards
+              baseAmount={amount}
+              periodMultiplier={STAKING_PERIODS[selectedPeriod].multiplier}
+              levelBonus={userStats?.stakeInfo?.levelBonus ?? 0}
+              hasReferralBonus={userStats?.referrer !== undefined && 
+                              userStats.referrer !== '0x0000000000000000000000000000000000000000'}
+            />
           )}
 
           {/* New Stake Form */}
