@@ -8,13 +8,13 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#B31701',
-          hover: '#FF2D2D',
+          DEFAULT: '#be1200',
+          hover: '#d41515',
         },
-        background: '#0A0B0D',
+        background: '#1E2023',
         card: {
-          DEFAULT: '#151515',
-          hover: '#1A1A1A',
+          DEFAULT: '#2A2D31',
+          hover: '#323538',
         },
       },
       container: {

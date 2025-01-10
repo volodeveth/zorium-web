@@ -4,9 +4,14 @@ import './globals.css';
 import '@/styles/animations.css';
 import { Providers } from './providers';
 import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 import { PageTransition } from '@/components/transitions/page-transition';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+});
 
 export const metadata: Metadata = {
   title: 'ZORIUM - Next Generation DeFi Platform',
@@ -42,16 +47,17 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body className={`${inter.className} min-h-screen bg-background text-white antialiased`}>
+      <body className={`${inter.className} min-h-screen bg-background text-white antialiased flex flex-col`}>
         <Providers>
           <Header />
           <PageTransition>
-            <main className="animate-fade-in pt-16 min-h-screen">
+            <main className="flex-grow animate-fade-in pt-16 min-h-[calc(100vh-64px)]">
               <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 {children}
               </div>
             </main>
           </PageTransition>
+          <Footer />
         </Providers>
       </body>
     </html>

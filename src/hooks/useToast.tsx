@@ -33,6 +33,12 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
 
   const showToast = useCallback((message: string, type: ToastType) => {
     const id = Math.random().toString(36).slice(2);
+    
+    // Видаляємо попередні тости типу 'loading'
+    if (type !== 'loading') {
+      setToasts(prevToasts => prevToasts.filter(toast => toast.type !== 'loading'));
+    }
+    
     setToasts((prevToasts) => [...prevToasts, { id, message, type }]);
 
     if (type !== 'loading') {

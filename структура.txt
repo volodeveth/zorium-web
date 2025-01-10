@@ -1,0 +1,98 @@
+Folder PATH listing for volume Work
+Volume serial number is 18B1-0B2E
+D:.
+│   .env
+│   .env.local
+│   .gitignore
+│   LICENSE
+│   next-assets.d.ts
+│   next-env.d.ts
+│   next.config.js
+│   package-lock.json
+│   package.json
+│   postcss.config.js
+│   tailwind.config.ts
+│   tsconfig.json
+│   vercel.json
+│   структура.txt
+│
+├───public
+│   │   explorer.ico
+│   │   favicon.ico
+│   │   geckoterminal.ico
+│   │   uniswap.ico
+│   │   x.ico
+│   │   zora.ico
+│   │
+│   └───icons
+│           explorer.svg
+│           geckoterminal.svg
+│           uniswap.svg
+│           x.svg
+│           zora.svg
+│           zoriumlogo.svg
+│
+└───src
+    ├───app
+    │   │   globals.css
+    │   │   layout.tsx
+    │   │   page.tsx
+    │   │   providers.tsx
+    │   │
+    │   ├───dashboard
+    │   │       page.tsx
+    │   │
+    │   ├───faq
+    │   │       page.tsx
+    │   │
+    │   ├───nft-rewards
+    │   │       page.tsx
+    │   │
+    │   ├───referral
+    │   │       page.tsx
+    │   │
+    │   └───staking
+    │           page.tsx
+    │
+    ├───components
+    │   │   StakeItem.tsx
+    │   │
+    │   ├───layout
+    │   │       Footer.tsx
+    │   │       Header.tsx
+    │   │
+    │   ├───transitions
+    │   │       page-transition.tsx
+    │   │       section-transition.tsx
+    │   │
+    │   └───ui
+    │           animated.tsx
+    │           button.tsx
+    │           card.tsx
+    │           level-progress.tsx
+    │           modal.tsx
+    │           stake-stats.tsx
+    │           stat-card.tsx
+    │           unlock-timer.tsx
+    │
+    ├───config
+    │       security.ts
+    │
+    ├───constants
+    │       contract.ts
+    │
+    ├───hooks
+    │       useReferralHandler.ts
+    │       useToast.tsx
+    │       useZorium.ts
+    │
+    ├───lib
+    │       utils.ts
+    │
+    ├───styles
+    │       animations.css
+    │
+    └───types
+            contract.ts
+            events.ts
+            staking.ts

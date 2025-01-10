@@ -1,75 +1,133 @@
-export const ZORIUM_CONTRACT_ADDRESS = "0x538D6F4fb9598dC74e15e6974049B109ae0AbC6a";
+export const ZORIUM_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string;
 
 export const ZORIUM_ABI = [
   {
-    inputs: [],
-    name: "name",
-    outputs: [{ type: "string", name: "" }],
-    stateMutability: "view",
-    type: "function"
+    "inputs": [],
+    "name": "totalStaked",
+    "outputs": [{ "type": "uint256", "name": "" }],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [],
-    name: "symbol",
-    outputs: [{ type: "string", name: "" }],
-    stateMutability: "view",
-    type: "function"
+    "inputs": [],
+    "name": "rewardPool",
+    "outputs": [{ "type": "uint256", "name": "" }],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [],
-    name: "totalStaked",
-    outputs: [{ type: "uint256", name: "" }],
-    stateMutability: "view",
-    type: "function"
+    "inputs": [],
+    "name": "totalBurned",
+    "outputs": [{ "type": "uint256", "name": "" }],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [],
-    name: "rewardPool",
-    outputs: [{ type: "uint256", name: "" }],
-    stateMutability: "view",
-    type: "function"
-  },
-  {
-    inputs: [],
-    name: "totalBurned",
-    outputs: [{ type: "uint256", name: "" }],
-    stateMutability: "view",
-    type: "function"
-  },
-  {
-    inputs: [
-      { name: "amount", type: "uint256" },
-      { name: "periodIndex", type: "uint256" }
+    "inputs": [{ "name": "user", "type": "address" }],
+    "name": "stakers",
+    "outputs": [
+      { "name": "amount", "type": "uint256" },
+      { "name": "since", "type": "uint256" },
+      { "name": "lockPeriod", "type": "uint256" },
+      { "name": "multiplier", "type": "uint256" },
+      { "name": "lastRewardCalculation", "type": "uint256" },
+      { "name": "level", "type": "uint8" },
+      { "name": "levelUpdated", "type": "uint256" },
+      { "name": "referrer", "type": "address" },
+      { "name": "referralCount", "type": "uint256" },
+      { "name": "referralBonus", "type": "uint256" },
+      { "name": "totalHistoricalStake", "type": "uint256" },
+      { "name": "totalHistoricalRewards", "type": "uint256" },
+      { "name": "isActive", "type": "bool" }
     ],
-    name: "createStake",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function"
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [],
-    name: "_claimReward",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function"
-  },
-  {
-    inputs: [{ name: "referrer", type: "address" }],
-    name: "registerReferral",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function"
-  },
-  {
-    inputs: [{ name: "user", type: "address" }],
-    name: "getUserStakeInfo",
-    outputs: [
-      { name: "amount", type: "uint256" },
-      { name: "since", type: "uint256" },
-      { name: "lockPeriod", type: "uint256" },
-      { name: "level", type: "uint8" }
+    "inputs": [{ "name": "user", "type": "address" }],
+    "name": "getUserStakes",
+    "outputs": [
+      {
+        "components": [
+          { "name": "amount", "type": "uint256" },
+          { "name": "since", "type": "uint256" },
+          { "name": "lockPeriod", "type": "uint256" },
+          { "name": "multiplier", "type": "uint256" },
+          { "name": "pendingRewards", "type": "uint256" },
+          { "name": "isActive", "type": "bool" }
+        ],
+        "name": "stakes",
+        "type": "tuple[]"
+      }
     ],
-    stateMutability: "view",
-    type: "function"
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "name": "amount", "type": "uint256" },
+      { "name": "periodIndex", "type": "uint256" }
+    ],
+    "name": "createStake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "unstake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "name": "stakeId", "type": "uint256" }],
+    "name": "unstakeById",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "name": "user", "type": "address" }],
+    "name": "calculateReward",
+    "outputs": [{ "type": "uint256", "name": "" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "name": "user", "type": "address" },
+    { "name": "stakeId", "type": "uint256" }],
+    "name": "calculateStakeReward",
+    "outputs": [{ "type": "uint256", "name": "" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "claimReward",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "name": "stakeId", "type": "uint256" }],
+    "name": "claimStakeReward",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "name": "referrer", "type": "address" }],
+    "name": "registerReferrer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "name": "user", "type": "address" }],
+    "name": "lastActionTime",
+    "outputs": [{ "type": "uint256", "name": "" }],
+    "stateMutability": "view",
+    "type": "function"
   }
 ] as const;

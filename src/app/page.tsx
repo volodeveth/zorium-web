@@ -38,7 +38,7 @@ export default function Home() {
   if (!mounted) return null;
 
   return (
-    <main className="min-h-screen bg-[#0A0B0D]">
+    <main className="min-h-screen bg-[#1e2023]">
       <div className="container mx-auto px-4 py-12">
         {/* Hero Section */}
         <div className="text-center mb-16">
@@ -123,7 +123,7 @@ export default function Home() {
             <ul className="space-y-3">
               <li className="list-item">
                 <div className="list-dot"></div>
-                Bronze: Start Level
+                Bronze: Start Level (0% bonus)
               </li>
               <li className="list-item">
                 <div className="list-dot"></div>
@@ -133,32 +133,20 @@ export default function Home() {
                 <div className="list-dot"></div>
                 Gold: 10M+ ZORIUM (25% bonus)
               </li>
+              <li className="list-item">
+                <div className="list-dot"></div>
+                Platinum: 100M+ ZORIUM (50% bonus)
+              </li>
             </ul>
           </Card>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <StatsCard 
-            title="Total Staked" 
-            value={`${stats.totalStaked} ZRM`}
-            icon={<Wallet className="w-8 h-8 text-white" />}
-          />
-          <StatsCard 
-            title="Reward Pool" 
-            value={`${stats.rewardPool} ZRM`}
-            icon={<Coins className="w-8 h-8 text-white" />}
-          />
-          <StatsCard 
-            title="Total Users" 
-            value="Coming Soon"
-            icon={<Users className="w-8 h-8 text-white" />}
-          />
-          <StatsCard 
-            title="Total Burned" 
-            value={`${stats.totalBurned} ZRM`}
-            icon={<TrendingUp className="w-8 h-8 text-white" />}
-          />
+          <StatsCard title="Total Staked" value={`${stats.totalStaked} ZRM`} icon={<Wallet className="w-8 h-8 text-white" />} />
+          <StatsCard title="Reward Pool" value={`${stats.rewardPool} ZRM`} icon={<Coins className="w-8 h-8 text-white" />} />
+          <StatsCard title="Total Users" value="Coming Soon" icon={<Users className="w-8 h-8 text-white" />} />
+          <StatsCard title="Total Burned" value={`${stats.totalBurned} ZRM`} icon={<TrendingUp className="w-8 h-8 text-white" />} />
         </div>
       </div>
     </main>
