@@ -50,31 +50,14 @@ const nextConfig = {
           {
             key: 'Content-Security-Policy',
             value: [
-              // Default security policy
               "default-src 'self'",
-              
-              // Scripts security policy
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' chrome-extension: https://*.walletconnect.com https://*.walletlink.org https://*.coinbase.com",
-              
-              // Styles security policy
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              
-              // Fonts security policy
               "font-src 'self' data: https://fonts.gstatic.com",
-              
-              // Images security policy
               "img-src 'self' data: https: blob:",
-              
-              // Connection security policy
               "connect-src 'self' https://*.walletconnect.org wss://*.walletconnect.org https://*.walletconnect.com https://rpc.zora.energy https://explorer-api.walletconnect.com https://verify.walletconnect.org wss://*.walletlink.org wss://relay.walletconnect.com wss://www.walletlink.org/rpc chrome-extension: https://*.coinbase.com",
-              
-              // Frames security policy
               "frame-src 'self' https://*.walletconnect.org https://*.walletconnect.com https://verify.walletconnect.org chrome-extension: https://*.coinbase.com",
-              
-              // Workers security policy
               "worker-src 'self' 'unsafe-inline' blob:",
-              
-              // Other security policies
               "manifest-src 'self'",
               "media-src 'self'",
               "child-src 'self' blob: https://*.walletconnect.com https://*.coinbase.com",
@@ -85,7 +68,6 @@ const nextConfig = {
               "upgrade-insecure-requests"
             ].join('; ')
           },
-          // Additional security headers
           {
             key: 'X-DNS-Prefetch-Control',
             value: 'on'
@@ -117,20 +99,13 @@ const nextConfig = {
 
   // Experimental features
   experimental: {
-    optimizeCss: true,
-    // Modern builds optimization
-    modern: true,
-    // Increase build performance
-    workerThreads: true,
-    // Enable new features
-    scrollRestoration: true,
+    optimizeCss: true
   },
 
   // Production optimization
   compiler: {
-    // Remove console.log in production
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
+    removeConsole: process.env.NODE_ENV === 'production'
+  }
 };
 
 module.exports = nextConfig;
