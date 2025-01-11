@@ -194,7 +194,7 @@ export function useZorium() {
       if (referrer && !stakerInfo?.[7]) {
         try {
           await registerReferrer({ 
-            args: [referrer] // referrer вже має тип Address
+            args: [referrer]
           });
           showToast('Referral registered successfully', 'success');
         } catch (error) {
@@ -355,7 +355,18 @@ export function useZorium() {
     const loadReferralsData = async () => {
       if (!stakerInfo?.[9]) return;
       
-      const referrals = stakerInfo[9] as Address[];
+      // Перетворюємо та перевіряємо кожну адресу
+      if (!Array.isArray(stakerInfo[9])) {
+        console.error('[ZORIUM] Invalid referrals data format');
+        return;
+      }
+
+      const referrals = (stakerInfo[9] as unknown[])
+        .filter((addr): addr is string => 
+          typeof addr === 'string' && isAddress(addr)
+        )
+        .map(addr => addr as Address);
+
       if (!referrals.length) return;
 
       setIsLoadingReferrals(true);
@@ -484,6 +495,43 @@ export function useZorium() {
       console.error('[ZORIUM] Cooldown check error:', error);
       return false;
     }
+  };
+
+  // Calculate potential rewards
+  const calculatePotentialRewards = (amount: string, periodIndex: number): {
+    baseReward: string;
+    withMultiplier: string;
+    withLevelBonus: string;
+    apy: number;
+  } => {
+    const baseAmount = Number(amount);
+    if (!baseAmount) return { 
+      baseReward: '0', 
+      withMultiplier: '0', 
+      withLevelBonus: '0', 
+      apy: 0 
+    };
+
+    const baseAnnualReward = baseAmount * 0.05;
+    const periodMultiplier = [1, 1.5, 2, 3][periodIndex] || 1;
+    const withPeriodBonus = baseAnnualReward * periodMultiplier;
+    
+    const stats = processUserStats();
+    const currentLevel = stats?.level || 'BRONZE';
+    const levelBonus = LEVEL_BONUSES[currentLevel as keyof typeof LEVEL_BONUSES] || 0;
+    const withLevelBonus = withPeriodBonus * (1 + levelBonus / 100);
+
+    const periodDays = [30, 90, 180, 365][periodIndex] || 30;
+    const periodFraction = periodDays / 365;
+    const periodReward = withLevelBonus * periodFraction;
+    const apy = (periodReward / baseAmount) * (365 / periodDays) * 100;
+
+    return {
+      baseReward: baseAnnualReward.toFixed(2),
+      withMultiplier: withPeriodBonus.toFixed(2),
+      withLevelBonus: withLevelBonus.toFixed(2),
+      apy: Number(apy.toFixed(2))
+    };
   };
 
   // Action functions
