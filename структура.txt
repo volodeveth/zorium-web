@@ -27,7 +27,9 @@ D:.
 │   └───icons
 │           explorer.svg
 │           geckoterminal.svg
+│           telegram.svg
 │           uniswap.svg
+│           warpcast.svg
 │           x.svg
 │           zora.svg
 │           zoriumlogo.svg
