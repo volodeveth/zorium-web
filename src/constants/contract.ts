@@ -1,5 +1,10 @@
-export const ZORIUM_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string;
+// Import required types if needed
+import { Address } from 'viem';
 
+// Contract address with proper typing for wagmi/viem
+export const ZORIUM_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
+
+// Contract ABI with proper typing
 export const ZORIUM_ABI = [
   {
     "inputs": [],
@@ -95,8 +100,10 @@ export const ZORIUM_ABI = [
     "type": "function"
   },
   {
-    "inputs": [{ "name": "user", "type": "address" },
-    { "name": "stakeId", "type": "uint256" }],
+    "inputs": [
+      { "name": "user", "type": "address" },
+      { "name": "stakeId", "type": "uint256" }
+    ],
     "name": "calculateStakeReward",
     "outputs": [{ "type": "uint256", "name": "" }],
     "stateMutability": "view",
@@ -131,3 +138,6 @@ export const ZORIUM_ABI = [
     "type": "function"
   }
 ] as const;
+
+// Optional: Export contract types for better type safety
+export type ZoriumContract = typeof ZORIUM_ABI;
