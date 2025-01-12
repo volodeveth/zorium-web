@@ -105,39 +105,65 @@ export function useZorium() {
   }, [searchParams]);
 
   // Contract reads
-  const { data: lastActionTime } = useContractRead({
+  const { data: lastActionTime, error: lastActionError } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
     functionName: 'lastActionTime',
     args: address ? [address as Address] : undefined,
     enabled: !!address,
     watch: true,
+    onError: (error) => {
+      console.error('[ZORIUM] Error fetching last action time:', error);
+    }
   });
 
-  const { data: totalStaked, refetch: refetchTotalStaked } = useContractRead({
+  const { 
+    data: totalStaked, 
+    refetch: refetchTotalStaked,
+    error: totalStakedError 
+  } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
     functionName: 'totalStaked',
     watch: true,
+    onSuccess: (data) => {
+      console.log('[ZORIUM] Total staked:', formatValue(data as bigint));
+    },
+    onError: (error) => {
+      console.error('[ZORIUM] Error fetching total staked:', error);
+    }
   });
 
-  const { data: rewardPool } = useContractRead({
+  const { data: rewardPool, error: rewardPoolError } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
     functionName: 'rewardPool',
     watch: true,
+    onSuccess: (data) => {
+      console.log('[ZORIUM] Reward pool:', formatValue(data as bigint));
+    },
+    onError: (error) => {
+      console.error('[ZORIUM] Error fetching reward pool:', error);
+    }
   });
 
-  const { data: totalBurned } = useContractRead({
+  const { data: totalBurned, error: totalBurnedError } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
     functionName: 'totalBurned',
     watch: true,
+    onSuccess: (data) => {
+      console.log('[ZORIUM] Total burned:', formatValue(data as bigint));
+    },
+    onError: (error) => {
+      console.error('[ZORIUM] Error fetching total burned:', error);
+    }
   });
 
   const { 
     data: stakerInfo, 
-    refetch: refetchStakerInfo 
+    refetch: refetchStakerInfo,
+    error: stakerInfoError 
   } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
@@ -148,11 +174,15 @@ export function useZorium() {
     onSuccess: (data) => {
       console.log('[ZORIUM] Raw staker info:', data);
     },
+    onError: (error) => {
+      console.error('[ZORIUM] Error fetching staker info:', error);
+    }
   });
 
   const { 
     data: pendingRewards, 
-    refetch: refetchRewards 
+    refetch: refetchRewards,
+    error: pendingRewardsError 
   } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
@@ -160,30 +190,45 @@ export function useZorium() {
     args: address ? [address as Address] : undefined,
     enabled: !!address,
     watch: true,
+    onError: (error) => {
+      console.error('[ZORIUM] Error fetching pending rewards:', error);
+    }
   });
-  // Contract writes
+// Contract writes
   const { writeAsync: stake, data: stakeTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
     functionName: 'createStake',
+    onError: (error) => {
+      console.error('[ZORIUM] Stake write error:', error);
+    }
   });
 
   const { writeAsync: unstake, data: unstakeTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
     functionName: 'unstake',
+    onError: (error) => {
+      console.error('[ZORIUM] Unstake write error:', error);
+    }
   });
 
   const { writeAsync: claimReward, data: claimTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
     functionName: 'claimReward',
+    onError: (error) => {
+      console.error('[ZORIUM] Claim write error:', error);
+    }
   });
 
   const { writeAsync: registerReferrer, data: referrerTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
     functionName: 'registerReferrer',
+    onError: (error) => {
+      console.error('[ZORIUM] Register referrer write error:', error);
+    }
   });
 
   // Transaction watchers
@@ -240,7 +285,7 @@ export function useZorium() {
     refetchStakerInfo();
     refetchRewards();
   }, [refetchTotalStaked, refetchStakerInfo, refetchRewards]);
-  // Helper functions
+// Helper functions
   const calculateLevel = (amount: number): { 
     level: string; 
     progress: number; 
@@ -285,7 +330,12 @@ export function useZorium() {
 
   const formatValue = (value: bigint | undefined): string => {
     if (!value) return '0';
-    return Number(formatEther(value)).toFixed(2);
+    try {
+      return Number(formatEther(value)).toFixed(2);
+    } catch (error) {
+      console.error('[ZORIUM] Error formatting value:', error);
+      return '0';
+    }
   };
 
   const getReferralInfo = useCallback(async (
@@ -326,31 +376,36 @@ export function useZorium() {
   const processReferralLevels = useCallback((
     referrals: ReferralInfo[]
   ): ReferralLevelInfo[] => {
-    return REFERRAL_COMMISSIONS.map((commission, index) => {
-      const levelReferrals = referrals.filter(
-        ref => ref.level === index.toString()
-      );
-      const activeReferrals = levelReferrals.filter(
-        ref => ref.isActive
-      );
-      
-      return {
-        level: index,
-        count: levelReferrals.length,
-        activeCount: activeReferrals.length,
-        totalEarned: levelReferrals.reduce(
-          (acc, ref) => acc + Number(ref.rewards?.total || 0), 
-          0
-        ).toFixed(2),
-        pendingRewards: levelReferrals.reduce(
-          (acc, ref) => acc + Number(ref.rewards?.pending || 0), 
-          0
-        ).toFixed(2),
-        commission
-      };
-    });
+    try {
+      return REFERRAL_COMMISSIONS.map((commission, index) => {
+        const levelReferrals = referrals.filter(
+          ref => ref.level === index.toString()
+        );
+        const activeReferrals = levelReferrals.filter(
+          ref => ref.isActive
+        );
+        
+        return {
+          level: index,
+          count: levelReferrals.length,
+          activeCount: activeReferrals.length,
+          totalEarned: levelReferrals.reduce(
+            (acc, ref) => acc + Number(ref.rewards?.total || 0), 
+            0
+          ).toFixed(2),
+          pendingRewards: levelReferrals.reduce(
+            (acc, ref) => acc + Number(ref.rewards?.pending || 0), 
+            0
+          ).toFixed(2),
+          commission
+        };
+      });
+    } catch (error) {
+      console.error('[ZORIUM] Error processing referral levels:', error);
+      return [];
+    }
   }, []);
-  // Load referrals data
+// Load referrals data
   useEffect(() => {
     const loadReferralsData = async () => {
       if (!stakerInfo?.[9]) return;
@@ -477,7 +532,7 @@ export function useZorium() {
       return undefined;
     }
   }, [stakerInfo, pendingRewards, referralsData, referralLevels]);
-  // Security and validation functions
+// Security and validation functions
   const checkCooldown = async (): Promise<boolean> => {
     try {
       const now = Math.floor(Date.now() / 1000);
@@ -495,43 +550,6 @@ export function useZorium() {
       console.error('[ZORIUM] Cooldown check error:', error);
       return false;
     }
-  };
-
-  // Calculate potential rewards
-  const calculatePotentialRewards = (amount: string, periodIndex: number): {
-    baseReward: string;
-    withMultiplier: string;
-    withLevelBonus: string;
-    apy: number;
-  } => {
-    const baseAmount = Number(amount);
-    if (!baseAmount) return { 
-      baseReward: '0', 
-      withMultiplier: '0', 
-      withLevelBonus: '0', 
-      apy: 0 
-    };
-
-    const baseAnnualReward = baseAmount * 0.05;
-    const periodMultiplier = [1, 1.5, 2, 3][periodIndex] || 1;
-    const withPeriodBonus = baseAnnualReward * periodMultiplier;
-    
-    const stats = processUserStats();
-    const currentLevel = stats?.level || 'BRONZE';
-    const levelBonus = LEVEL_BONUSES[currentLevel as keyof typeof LEVEL_BONUSES] || 0;
-    const withLevelBonus = withPeriodBonus * (1 + levelBonus / 100);
-
-    const periodDays = [30, 90, 180, 365][periodIndex] || 30;
-    const periodFraction = periodDays / 365;
-    const periodReward = withLevelBonus * periodFraction;
-    const apy = (periodReward / baseAmount) * (365 / periodDays) * 100;
-
-    return {
-      baseReward: baseAnnualReward.toFixed(2),
-      withMultiplier: withPeriodBonus.toFixed(2),
-      withLevelBonus: withLevelBonus.toFixed(2),
-      apy: Number(apy.toFixed(2))
-    };
   };
 
   // Action functions

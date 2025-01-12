@@ -3,6 +3,7 @@
 import { getDefaultWallets, RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { configureChains, createConfig, WagmiConfig } from 'wagmi';
 import { publicProvider } from 'wagmi/providers/public';
+import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
 import '@rainbow-me/rainbowkit/styles.css';
 import { ToastProvider } from '@/hooks/useToast';
 
@@ -25,9 +26,18 @@ const zora = {
   testnet: false,
 };
 
-const { chains, publicClient } = configureChains(
+// Налаштування провайдерів для більшої надійності
+const { chains, publicClient, webSocketPublicClient } = configureChains(
   [zora],
-  [publicProvider()]
+  [
+    jsonRpcProvider({
+      rpc: (chain) => ({
+        http: 'https://rpc.zora.energy',
+        websocket: 'wss://rpc.zora.energy',
+      }),
+    }),
+    publicProvider(),
+  ]
 );
 
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '';
@@ -41,7 +51,8 @@ const { connectors } = getDefaultWallets({
 const wagmiConfig = createConfig({
   autoConnect: true,
   connectors,
-  publicClient
+  publicClient,
+  webSocketPublicClient,
 });
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -52,8 +63,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         theme={darkTheme({
           accentColor: '#B31701',
           borderRadius: 'large',
+          overlayBlur: 'small',
         })}
         coolMode
+        showRecentTransactions={true}
       >
         <ToastProvider>
           {children}
