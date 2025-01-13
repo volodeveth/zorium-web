@@ -38,6 +38,10 @@ const nextConfig = {
         source: '/nft-rewards',
         destination: '/nft-rewards/page',
       },
+      {
+        source: '/faq',
+        destination: '/faq/page',
+      },
     ];
   },
 
@@ -50,23 +54,42 @@ const nextConfig = {
           {
             key: 'Content-Security-Policy',
             value: [
+              // Base directives
               "default-src 'self'",
-              // Розширюємо script-src для підтримки всіх необхідних джерел
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' chrome-extension: https://*.walletconnect.com https://*.walletlink.org https://*.coinbase.com https://vercel.live https://*.vercel.app",
+              
+              // Scripts
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' 'inline-speculation-rules' chrome-extension: https://*.walletconnect.com https://*.walletlink.org https://*.coinbase.com https://vercel.live https://*.vercel.app",
+              
+              // Styles
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              
+              // Fonts
               "font-src 'self' data: https://fonts.gstatic.com",
-              "img-src 'self' data: https: blob:",
-              // Розширюємо connect-src для підтримки всіх з'єднань
+              
+              // Images
+              "img-src 'self' data: https: blob: https://*.walletconnect.com https://*.coinbase.com",
+              
+              // Connections
               "connect-src 'self' https: wss: data: blob: https://*.walletconnect.org wss://*.walletconnect.org https://*.walletconnect.com https://rpc.zora.energy https://explorer-api.walletconnect.com https://verify.walletconnect.org wss://*.walletlink.org wss://relay.walletconnect.com wss://www.walletlink.org/rpc chrome-extension: https://*.coinbase.com https://vercel.live",
-              "frame-src 'self' https://*.walletconnect.org https://*.walletconnect.com https://verify.walletconnect.org chrome-extension: https://*.coinbase.com",
+              
+              // Frames
+              "frame-src 'self' https: https://*.walletconnect.org https://*.walletconnect.com https://verify.walletconnect.org chrome-extension: https://*.coinbase.com https://vercel.live",
+              
+              // Workers
               "worker-src 'self' 'unsafe-inline' blob:",
+              
+              // Media and manifest
               "manifest-src 'self'",
               "media-src 'self'",
+              
+              // Child and object sources
               "child-src 'self' blob: https://*.walletconnect.com https://*.coinbase.com",
               "object-src 'none'",
+              
+              // Security
               "base-uri 'self'",
               "form-action 'self'",
-              "frame-ancestors 'self'",
+              "frame-ancestors 'self'"
             ].join('; ')
           },
           {
@@ -98,11 +121,24 @@ const nextConfig = {
     ];
   },
 
+  // Image optimization
+  images: {
+    domains: ['*'],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+  },
+
   // Production optimization
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn', 'info'],
     } : false,
+  },
+
+  // Development settings
+  async redirects() {
+    return [];
   }
 };
 

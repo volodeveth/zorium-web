@@ -1,0 +1,45 @@
+{
+  "name": "ZORIUM DeFi Platform",
+  "short_name": "ZORIUM",
+  "description": "Stake, earn rewards, and build your referral network with ZORIUM",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1E2023",
+  "theme_color": "#0A0B0D",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/zoriumlogo.svg",
+      "sizes": "32x32",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "categories": ["finance", "defi", "blockchain"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "View your staking stats"
+    },
+    {
+      "name": "Staking",
+      "url": "/staking",
+      "description": "Stake your ZORIUM tokens"
+    }
+  ],
+  "lang": "en",
+  "dir": "ltr"
+}
