@@ -54,42 +54,23 @@ const nextConfig = {
           {
             key: 'Content-Security-Policy',
             value: [
-              // Base directives
-              "default-src 'self'",
-              
-              // Scripts
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' 'inline-speculation-rules' chrome-extension: https://*.walletconnect.com https://*.walletlink.org https://*.coinbase.com https://vercel.live https://*.vercel.app",
-              
-              // Styles
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              
-              // Fonts
-              "font-src 'self' data: https://fonts.gstatic.com",
-              
-              // Images
-              "img-src 'self' data: https: blob: https://*.walletconnect.com https://*.coinbase.com",
-              
-              // Connections
-              "connect-src 'self' https: wss: data: blob: https://*.walletconnect.org wss://*.walletconnect.org https://*.walletconnect.com https://rpc.zora.energy https://explorer-api.walletconnect.com https://verify.walletconnect.org wss://*.walletlink.org wss://relay.walletconnect.com wss://www.walletlink.org/rpc chrome-extension: https://*.coinbase.com https://vercel.live",
-              
-              // Frames
-              "frame-src 'self' https: https://*.walletconnect.org https://*.walletconnect.com https://verify.walletconnect.org chrome-extension: https://*.coinbase.com https://vercel.live",
-              
-              // Workers
+              "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' chrome-extension: https://*.walletconnect.com https://*.walletlink.org https://*.coinbase.com https://vercel.live https://*.vercel.app",
+              "style-src 'self' 'unsafe-inline' https: https://fonts.googleapis.com",
+              "font-src 'self' data: https: https://fonts.gstatic.com",
+              "img-src 'self' data: https: blob: ipfs:",
+              "connect-src 'self' https: wss: data: blob: https://*.walletconnect.org wss://*.walletconnect.org https://*.walletconnect.com https://rpc.zora.energy https://explorer-api.walletconnect.com https://verify.walletconnect.org wss://*.walletlink.org wss://relay.walletconnect.com wss://www.walletlink.org/rpc",
+              "frame-src 'self' https: chrome-extension: https://*.walletconnect.org https://*.walletconnect.com https://verify.walletconnect.org https://*.coinbase.com",
               "worker-src 'self' 'unsafe-inline' blob:",
-              
-              // Media and manifest
               "manifest-src 'self'",
               "media-src 'self'",
-              
-              // Child and object sources
-              "child-src 'self' blob: https://*.walletconnect.com https://*.coinbase.com",
+              "child-src 'self' blob:",
               "object-src 'none'",
-              
-              // Security
               "base-uri 'self'",
               "form-action 'self'",
-              "frame-ancestors 'self'"
+              "frame-ancestors 'self'",
+              "upgrade-insecure-requests",
+              "block-all-mixed-content"
             ].join('; ')
           },
           {
@@ -126,7 +107,7 @@ const nextConfig = {
     domains: ['*'],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    contentSecurityPolicy: "default-src 'self' 'unsafe-inline'; script-src 'none'; sandbox;",
   },
 
   // Production optimization

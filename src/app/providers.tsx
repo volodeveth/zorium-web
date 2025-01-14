@@ -26,25 +26,26 @@ const zora = {
   testnet: false,
 };
 
-// Налаштування провайдерів для більшої надійності
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [zora],
   [
     jsonRpcProvider({
-      rpc: (chain) => ({
+      rpc: () => ({
         http: 'https://rpc.zora.energy',
-        websocket: 'wss://rpc.zora.energy',
       }),
     }),
     publicProvider(),
   ]
 );
 
-const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '';
+const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
+if (!projectId) {
+  console.error('Missing NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID');
+}
 
 const { connectors } = getDefaultWallets({
   appName: 'Zorium DApp',
-  projectId,
+  projectId: projectId || '',
   chains
 });
 
