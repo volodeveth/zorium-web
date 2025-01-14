@@ -17,9 +17,11 @@ D:.
 │   структура.txt
 │
 ├───public
+│   │   apple-touch-icon.png
 │   │   explorer.ico
 │   │   favicon.ico
 │   │   geckoterminal.ico
+│   │   manifest.json
 │   │   uniswap.ico
 │   │   x.ico
 │   │   zora.ico
@@ -36,8 +38,10 @@ D:.
 │
 └───src
     ├───app
+    │   │   error.tsx
     │   │   globals.css
     │   │   layout.tsx
+    │   │   not-found.tsx
     │   │   page.tsx
     │   │   providers.tsx
     │   │
@@ -84,6 +88,7 @@ D:.
     │       contract.ts
     │
     ├───hooks
+    │       useLocalStorage.ts
     │       useReferralHandler.ts
     │       useToast.tsx
     │       useZorium.ts
