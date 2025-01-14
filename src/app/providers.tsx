@@ -56,9 +56,7 @@ const wagmiConfig = createConfig({
   publicClient,
   webSocketPublicClient,
   logger: {
-    warn: (message) => console.warn(message),
-    error: (message) => console.error(message),
-    debug: (message) => console.log(message),
+    warn: console.warn,
   },
 });
 
