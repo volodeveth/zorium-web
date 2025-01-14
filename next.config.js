@@ -53,25 +53,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' chrome-extension: https://*.walletconnect.com https://*.walletlink.org https://*.coinbase.com https://vercel.live https://*.vercel.app",
-              "style-src 'self' 'unsafe-inline' https: https://fonts.googleapis.com",
-              "font-src 'self' data: https: https://fonts.gstatic.com",
-              "img-src 'self' data: https: blob: ipfs:",
-              "connect-src 'self' https: wss: data: blob: https://*.walletconnect.org wss://*.walletconnect.org https://*.walletconnect.com https://rpc.zora.energy https://explorer-api.walletconnect.com https://verify.walletconnect.org wss://*.walletlink.org wss://relay.walletconnect.com wss://www.walletlink.org/rpc",
-              "frame-src 'self' https: chrome-extension: https://*.walletconnect.org https://*.walletconnect.com https://verify.walletconnect.org https://*.coinbase.com",
-              "worker-src 'self' 'unsafe-inline' blob:",
-              "manifest-src 'self'",
-              "media-src 'self'",
-              "child-src 'self' blob:",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'self'",
-              "upgrade-insecure-requests",
-              "block-all-mixed-content"
-            ].join('; ')
+            value: "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';"
           },
           {
             key: 'X-DNS-Prefetch-Control',
@@ -106,8 +88,7 @@ const nextConfig = {
   images: {
     domains: ['*'],
     dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self' 'unsafe-inline'; script-src 'none'; sandbox;",
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
   // Production optimization
@@ -115,11 +96,6 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn', 'info'],
     } : false,
-  },
-
-  // Development settings
-  async redirects() {
-    return [];
   }
 };
 

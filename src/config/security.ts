@@ -2,23 +2,7 @@
 export const securityHeaders = [
   {
     key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https: chrome-extension: blob:",
-      "style-src 'self' 'unsafe-inline' https:",
-      "img-src 'self' data: https: blob: ipfs:",
-      "font-src 'self' data: https:",
-      "connect-src 'self' https: wss: data: blob:",
-      "frame-src 'self' https: chrome-extension:",
-      "worker-src 'self' 'unsafe-inline' blob:",
-      "child-src 'self' blob:",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "frame-ancestors 'self'",
-      "upgrade-insecure-requests",
-      "block-all-mixed-content"
-    ].join('; ')
+    value: "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';"
   },
   {
     key: 'Permissions-Policy',
