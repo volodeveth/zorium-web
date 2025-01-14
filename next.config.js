@@ -3,6 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   poweredByHeader: false,
+  trailingSlash: true,
 
   webpack: (config) => {
     config.externals = [
@@ -37,6 +38,36 @@ const nextConfig = {
       {
         source: '/faq',
         destination: '/faq/page',
+      },
+    ];
+  },
+
+  async redirects() {
+    return [
+      {
+        source: '/dashboard/page',
+        destination: '/dashboard',
+        permanent: true,
+      },
+      {
+        source: '/staking/page',
+        destination: '/staking',
+        permanent: true,
+      },
+      {
+        source: '/referral/page',
+        destination: '/referral',
+        permanent: true,
+      },
+      {
+        source: '/nft-rewards/page',
+        destination: '/nft-rewards',
+        permanent: true,
+      },
+      {
+        source: '/faq/page',
+        destination: '/faq',
+        permanent: true,
       },
     ];
   },

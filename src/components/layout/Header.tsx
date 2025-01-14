@@ -1,4 +1,3 @@
-// src/components/layout/Header.tsx
 'use client';
 
 import React from 'react';
@@ -17,13 +16,20 @@ const navigation = [
 
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleNavigate = (href: string) => {
     setMobileMenuOpen(false);
     router.push(href);
   };
+
+  if (!mounted) return null;
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#282c34]/80 backdrop-blur-sm border-b border-gray-800/50">

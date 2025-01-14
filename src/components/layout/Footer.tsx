@@ -4,7 +4,19 @@ import React from 'react';
 import Link from 'next/link';
 import { Home, LayoutDashboard, Coins, Users, HelpCircle, ExternalLink, Gift } from 'lucide-react';
 
-const navigationLinks = [
+interface NavigationLink {
+  name: string;
+  href: string;
+  icon: React.ComponentType<any>;
+}
+
+interface SocialLink {
+  name: string;
+  href: string;
+  icon: string;
+}
+
+const navigationLinks: NavigationLink[] = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Staking', href: '/staking', icon: Coins },
@@ -13,7 +25,7 @@ const navigationLinks = [
   { name: 'FAQ', href: '/faq', icon: HelpCircle },
 ];
 
-const socialLinks = [
+const socialLinks: SocialLink[] = [
   {
     name: 'X (Twitter)',
     href: 'https://x.com/zoriumtoken',
@@ -52,6 +64,14 @@ const socialLinks = [
 ];
 
 export const Footer = () => {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
   return (
     <footer className="w-full bg-background/80 backdrop-blur-sm border-t border-gray-800/50 mt-auto">
       <div className="container mx-auto px-4 py-8">

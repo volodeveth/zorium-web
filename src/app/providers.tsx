@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { getDefaultWallets, RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { configureChains, createConfig, WagmiConfig } from 'wagmi';
 import { publicProvider } from 'wagmi/providers/public';
@@ -31,7 +32,7 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
   [
     jsonRpcProvider({
       rpc: () => ({
-        http: 'https://rpc.zora.energy',
+        http: process.env.NEXT_PUBLIC_RPC_URL || 'https://rpc.zora.energy',
       }),
     }),
     publicProvider(),
@@ -54,9 +55,24 @@ const wagmiConfig = createConfig({
   connectors,
   publicClient,
   webSocketPublicClient,
+  logger: {
+    warn: (message) => console.warn(message),
+    error: (message) => console.error(message),
+    debug: (message) => console.log(message),
+  },
 });
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <WagmiConfig config={wagmiConfig}>
       <RainbowKitProvider 
@@ -64,7 +80,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
         theme={darkTheme({
           accentColor: '#B31701',
           borderRadius: 'large',
-          overlayBlur: 'small',
         })}
         coolMode
         showRecentTransactions={true}

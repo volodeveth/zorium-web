@@ -37,8 +37,8 @@ export const metadata: Metadata = {
   viewport: {
     width: 'device-width',
     initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
+    maximumScale: 5,
+    userScalable: true,
     viewportFit: 'cover',
   },
   verification: {
@@ -121,13 +121,13 @@ export default function RootLayout({
         <Providers>
           <div className="flex flex-col min-h-screen">
             <Header />
-            <PageTransition>
-              <main className="flex-grow animate-fade-in pt-16 min-h-[calc(100vh-64px)]">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <main className="flex-grow animate-fade-in pt-16">
+              <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                <PageTransition>
                   {children}
-                </div>
-              </main>
-            </PageTransition>
+                </PageTransition>
+              </div>
+            </main>
             <Footer />
           </div>
         </Providers>
