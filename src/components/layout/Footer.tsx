@@ -2,10 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Home, LayoutDashboard, Coins, Users, HelpCircle, ExternalLink, Gift } from 'lucide-react';
+import { Home, LayoutDashboard, Coins, Users, HelpCircle, ExternalLink, Gift, LucideIcon } from 'lucide-react';
 import { navigation, socialLinks } from '@/navigation';
 
-const navigationIcons: Record<string, React.ComponentType> = {
+// Оновлюємо тип для navigationIcons
+const navigationIcons: Record<string, LucideIcon> = {
   '/': Home,
   '/dashboard': LayoutDashboard,
   '/staking': Coins,
@@ -13,6 +14,10 @@ const navigationIcons: Record<string, React.ComponentType> = {
   '/nft-rewards': Gift,
   '/faq': HelpCircle,
 };
+
+interface IconProps extends React.SVGProps<SVGSVGElement> {
+  className?: string;
+}
 
 export const Footer = () => {
   const [mounted, setMounted] = React.useState(false);
@@ -52,8 +57,9 @@ export const Footer = () => {
             }, [
               Icon && React.createElement(Icon, {
                 key: 'icon',
+                size: 16,
                 className: "w-4 h-4"
-              }),
+              } as IconProps),
               React.createElement('span', { key: 'text' }, link.name)
             ]);
           }))
@@ -83,8 +89,9 @@ export const Footer = () => {
               React.createElement('span', { key: 'text' }, link.name),
               React.createElement(ExternalLink, {
                 key: 'external',
+                size: 12,
                 className: "w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity"
-              })
+              } as IconProps)
             ])
           ))
         ])
