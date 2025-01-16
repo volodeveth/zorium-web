@@ -3,41 +3,31 @@
 import React from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Menu, X } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Staking', href: '/staking' },
-  { name: 'Referral', href: '/referral' },
-  { name: 'NFT Rewards', href: '/nft-rewards' },
-  { name: 'FAQ', href: '/faq' },
-];
+import { navigation, routes } from '@/navigation';
 
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
   const pathname = usePathname();
-  const router = useRouter();
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleNavigate = (href: string) => {
-    setMobileMenuOpen(false);
-    router.push(href);
-  };
-
-  if (!mounted) return null;
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#282c34]/80 backdrop-blur-sm border-b border-gray-800/50">
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <button 
-          onClick={() => handleNavigate('/')} 
-          className="flex items-center gap-2 group bg-transparent border-0 cursor-pointer"
+        <Link 
+          href={routes.home}
+          className="flex items-center gap-2 group"
         >
           <Image
             src="/icons/zoriumlogo.svg"
@@ -50,22 +40,22 @@ export const Header = () => {
           <span className="text-xl font-bold bg-gradient-to-r from-[#be1103] to-[#d41404] bg-clip-text text-transparent transition-colors duration-300 group-hover:text-[#be1103]">
             ZORIUM
           </span>
-        </button>
+        </Link>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8">
           {navigation.map((item) => (
-            <button
+            <Link
               key={item.name}
-              onClick={() => handleNavigate(item.href)}
-              className={`text-sm font-medium transition-colors bg-transparent border-0 cursor-pointer ${
+              href={item.href}
+              className={`text-sm font-medium transition-colors ${
                 pathname === item.href 
                   ? 'text-[#be1103]' 
                   : 'text-gray-400 hover:text-white'
               }`}
             >
               {item.name}
-            </button>
+            </Link>
           ))}
         </div>
 
@@ -93,17 +83,18 @@ export const Header = () => {
         <div className="md:hidden bg-[#282c34] border-b border-gray-800/50">
           <div className="container mx-auto px-4 py-4 space-y-4">
             {navigation.map((item) => (
-              <button
+              <Link
                 key={item.name}
-                onClick={() => handleNavigate(item.href)}
-                className={`block w-full text-left text-sm font-medium bg-transparent border-0 cursor-pointer ${
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block w-full text-left text-sm font-medium transition-colors ${
                   pathname === item.href 
                     ? 'text-[#be1103]' 
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
                 {item.name}
-              </button>
+              </Link>
             ))}
           </div>
         </div>
