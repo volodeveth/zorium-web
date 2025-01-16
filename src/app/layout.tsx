@@ -120,15 +120,22 @@ export default function RootLayout({
       >
         <Providers>
           <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-grow animate-fade-in pt-16">
-              <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <PageTransition>
-                  {children}
-                </PageTransition>
-              </div>
-            </main>
-            <Footer />
+            {/* Фіксований контейнер для Header */}
+            <div className="fixed top-0 left-0 right-0 z-50 h-16 bg-background/80">
+              <Header />
+            </div>
+            {/* Основний контент */}
+            <div className="flex flex-col min-h-screen">
+              <div className="h-16" /> {/* Placeholder для header */}
+              <main className="flex-grow">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                  <PageTransition>
+                    {children}
+                  </PageTransition>
+                </div>
+              </main>
+              <Footer />
+            </div>
           </div>
         </Providers>
       </body>
