@@ -24,7 +24,7 @@ export const Header = () => {
   }
 
   return (
-    <header className="w-full h-full bg-[#282c34]/80 backdrop-blur-sm border-b border-gray-800/50">
+    <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-[#282c34]/80 backdrop-blur-sm border-b border-gray-800/50">
       <nav className="container mx-auto px-4 h-full flex items-center justify-between">
         {/* Logo */}
         <Link 
