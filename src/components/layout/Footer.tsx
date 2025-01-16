@@ -2,10 +2,20 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Home, LayoutDashboard, Coins, Users, HelpCircle, ExternalLink, Gift } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { navigation, socialLinks } from '@/navigation';
 
-export const Footer = () => {
+export const Footer: React.FC = () => {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <footer className="w-full bg-background/80 backdrop-blur-sm border-t border-gray-800/50 mt-auto">
       <div className="container mx-auto px-4 py-8">
@@ -61,3 +71,5 @@ export const Footer = () => {
     </footer>
   );
 };
+
+export default Footer;
