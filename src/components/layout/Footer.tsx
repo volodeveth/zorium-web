@@ -14,7 +14,7 @@ const navigationIcons: Record<string, React.ComponentType> = {
   '/faq': HelpCircle,
 };
 
-function Footer() {
+export const Footer = () => {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -24,49 +24,6 @@ function Footer() {
   if (!mounted) {
     return null;
   }
-
-  // Helper function для створення навігаційних посилань
-  const renderNavigationLinks = () => {
-    return navigation.map((link) => {
-      const Icon = navigationIcons[link.href];
-      return React.createElement(Link, {
-        key: link.name,
-        href: link.href,
-        className: "flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-      }, [
-        Icon && React.createElement(Icon, {
-          key: 'icon',
-          className: "w-4 h-4"
-        }),
-        React.createElement('span', { key: 'text' }, link.name)
-      ]);
-    });
-  };
-
-  // Helper function для створення соціальних посилань
-  const renderSocialLinks = () => {
-    return socialLinks.map((link) => 
-      React.createElement('a', {
-        key: link.name,
-        href: link.href,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        className: "flex items-center gap-2 text-gray-400 hover:text-white transition-colors group"
-      }, [
-        React.createElement('img', {
-          key: 'img',
-          src: link.icon,
-          alt: link.name,
-          className: "w-4 h-4 opacity-75 group-hover:opacity-100 transition-opacity"
-        }),
-        React.createElement('span', { key: 'text' }, link.name),
-        React.createElement(ExternalLink, {
-          key: 'external',
-          className: "w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity"
-        })
-      ])
-    );
-  };
 
   return React.createElement('div', {
     className: "w-full bg-background/80 backdrop-blur-sm border-t border-gray-800/50 mt-auto"
@@ -86,7 +43,20 @@ function Footer() {
           React.createElement('div', {
             key: 'nav-grid',
             className: "grid grid-cols-2 gap-4"
-          }, renderNavigationLinks())
+          }, navigation.map((link) => {
+            const Icon = navigationIcons[link.href];
+            return React.createElement(Link, {
+              key: link.name,
+              href: link.href,
+              className: "flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+            }, [
+              Icon && React.createElement(Icon, {
+                key: 'icon',
+                className: "w-4 h-4"
+              }),
+              React.createElement('span', { key: 'text' }, link.name)
+            ]);
+          }))
         ]),
         React.createElement('div', { key: 'social' }, [
           React.createElement('h3', {
@@ -96,7 +66,27 @@ function Footer() {
           React.createElement('div', {
             key: 'social-grid',
             className: "grid grid-cols-2 sm:grid-cols-3 gap-4"
-          }, renderSocialLinks())
+          }, socialLinks.map(link => 
+            React.createElement('a', {
+              key: link.name,
+              href: link.href,
+              target: "_blank",
+              rel: "noopener noreferrer",
+              className: "flex items-center gap-2 text-gray-400 hover:text-white transition-colors group"
+            }, [
+              React.createElement('img', {
+                key: 'img',
+                src: link.icon,
+                alt: link.name,
+                className: "w-4 h-4 opacity-75 group-hover:opacity-100 transition-opacity"
+              }),
+              React.createElement('span', { key: 'text' }, link.name),
+              React.createElement(ExternalLink, {
+                key: 'external',
+                className: "w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity"
+              })
+            ])
+          ))
         ])
       ]),
       React.createElement('div', {
@@ -109,6 +99,4 @@ function Footer() {
       )
     ])
   );
-}
-
-export default Footer;
+};
