@@ -2,19 +2,27 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ExternalLink } from 'lucide-react';
+import { Home, LayoutDashboard, Coins, Users, HelpCircle, ExternalLink, Gift } from 'lucide-react';
 import { navigation, socialLinks } from '@/navigation';
 
-export const Footer: React.FC = () => {
+// Додаємо типи іконок для навігації
+const navigationIcons = {
+  '/': Home,
+  '/dashboard': LayoutDashboard,
+  '/staking': Coins,
+  '/referral': Users,
+  '/nft-rewards': Gift,
+  '/faq': HelpCircle,
+} as const;
+
+export const Footer = () => {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return null;
-  }
+  if (!mounted) return null;
 
   return (
     <footer className="w-full bg-background/80 backdrop-blur-sm border-t border-gray-800/50 mt-auto">
@@ -24,15 +32,19 @@ export const Footer: React.FC = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4 text-gray-300">Navigation</h3>
             <div className="grid grid-cols-2 gap-4">
-              {navigation.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-                >
-                  <span>{link.name}</span>
-                </Link>
-              ))}
+              {navigation.map((link) => {
+                const Icon = navigationIcons[link.href as keyof typeof navigationIcons];
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{link.name}</span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
@@ -71,5 +83,3 @@ export const Footer: React.FC = () => {
     </footer>
   );
 };
-
-export default Footer;
