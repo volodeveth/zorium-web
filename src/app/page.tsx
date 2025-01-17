@@ -140,8 +140,8 @@ export default function Page() {
         </Card>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      {/* Stats Grid - Оновлена версія */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
         <StatsCard 
           title="Total Staked" 
           value={`${stats.totalStaked} ZRM`} 

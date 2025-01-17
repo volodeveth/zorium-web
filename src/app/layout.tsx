@@ -37,8 +37,8 @@ export const metadata: Metadata = {
  viewport: {
    width: 'device-width',
    initialScale: 1,
-   maximumScale: 5,
-   userScalable: true,
+   maximumScale: 1,
+   userScalable: false,
    viewportFit: 'cover',
  },
  verification: {
@@ -97,7 +97,8 @@ export default function RootLayout({
    >
      <head>
        <meta charSet="utf-8" />
-       <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+       {/* Оновлений viewport мета-тег */}
+       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover" />
        <meta name="theme-color" content="#0A0B0D" media="(prefers-color-scheme: dark)" />
        <meta name="theme-color" content="#0A0B0D" media="(prefers-color-scheme: light)" />
        <meta name="mobile-web-app-capable" content="yes" />
@@ -115,7 +116,7 @@ export default function RootLayout({
        <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
      </head>
      <body 
-       className={`${inter.className} min-h-screen bg-background text-white antialiased`}
+       className={`${inter.className} min-h-screen bg-background text-white antialiased overflow-x-hidden`}
        suppressHydrationWarning
      >
        <Providers>
@@ -123,7 +124,7 @@ export default function RootLayout({
          <Header />
          
          {/* Main Content */}
-         <main className="mt-16"> {/* mt-16 = 4rem = висота хедера */}
+         <main className="mt-16 min-h-[calc(100vh-4rem)]"> {/* Додано min-height */}
            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
              <PageTransition>
                {children}
