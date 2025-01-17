@@ -145,7 +145,7 @@ export default function FAQ() {
   if (!mounted) return null;
 
   return (
-    <div>
+    <>
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Frequently Asked Questions</h1>
@@ -194,6 +194,6 @@ export default function FAQ() {
           </div>
         </div>
       </Card>
-    </div>
+    </>
   );
 }

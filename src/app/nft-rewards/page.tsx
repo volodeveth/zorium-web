@@ -15,7 +15,7 @@ export default function NFTRewards() {
   if (!mounted) return null;
 
   return (
-    <div>
+    <>
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">NFT Rewards</h1>
         <p className="text-gray-400">
@@ -42,6 +42,6 @@ export default function NFTRewards() {
           </div>
         </div>
       </Card>
-    </div>
+    </>
   );
 }

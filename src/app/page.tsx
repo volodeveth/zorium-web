@@ -1,79 +1,34 @@
 'use client';
 
-import React from 'react';
+import React from "react";
+import { useZorium } from "@/hooks/useZorium";
 import { useAccount } from 'wagmi';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useZorium } from '@/hooks/useZorium';
-import { Wallet, Clock, Users, Gift, TrendingUp, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { LevelProgress } from '@/components/ui/level-progress';
-import { UnlockTimer } from '@/components/ui/unlock-timer';
-import { StakeStats } from '@/components/ui/stake-stats';
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Wallet, Coins, Users, TrendingUp, ArrowRight } from "lucide-react";
 
-interface StatCardProps {
+interface StatsCardProps {
   title: string;
   value: string;
   icon: React.ReactNode;
-  description?: string;
-  isLoading?: boolean;
 }
 
-const StatCard = ({ title, value, icon, description, isLoading }: StatCardProps) => (
-  <Card className="relative overflow-hidden group">
-    <div className="p-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-gray-400 mb-1">{title}</p>
-          {isLoading ? (
-            <div className="h-8 w-32 bg-gray-800 animate-pulse rounded" />
-          ) : (
-            <p className="text-2xl font-bold">{value}</p>
-          )}
-          {description && (
-            <p className="text-sm text-gray-500 mt-1">{description}</p>
-          )}
-        </div>
-        <div className="p-3 bg-primary/10 rounded-lg">
-          {icon}
-        </div>
-      </div>
+const StatsCard = ({ title, value, icon }: StatsCardProps) => (
+  <div className="stats-card">
+    <div className="icon-container">
+      {icon}
     </div>
-    <div className="absolute inset-0 -z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-      <div className="absolute inset-px rounded-xl bg-gradient-to-r from-primary to-primary-hover" />
+    <div>
+      <h3 className="text-gray-400 font-medium mb-1">{title}</h3>
+      <p className="text-2xl font-bold text-white">{value}</p>
     </div>
-  </Card>
+  </div>
 );
 
-interface ActionCardProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  href: string;
-}
-
-const ActionCard = ({ title, description, icon, href }: ActionCardProps) => (
-  <Link href={href}>
-    <Card className="group cursor-pointer transition-all hover:scale-[1.02]">
-      <div className="p-6">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-r from-primary to-primary-hover rounded-xl">
-            {icon}
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-1">{title}</h3>
-            <p className="text-sm text-gray-400">{description}</p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-gray-500 group-hover:translate-x-1 transition-transform" />
-        </div>
-      </div>
-    </Card>
-  </Link>
-);
-
-export default function Dashboard() {
-  const { address } = useAccount();
-  const { stats, userStats, actions, referralInfo } = useZorium();
+export default function Home() {
+  const { stats } = useZorium();
+  const { isConnected } = useAccount();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -82,168 +37,132 @@ export default function Dashboard() {
 
   if (!mounted) return null;
 
-  if (!address) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <h1 className="text-2xl font-bold mb-4">Connect your wallet to continue</h1>
-        <p className="text-gray-400 text-center mb-8">
-          You need to connect your wallet to access the dashboard
-        </p>
-      </div>
-    );
-  }
-
-  const totalPendingRewards = userStats?.stakeInfo
-    ? (Number(userStats.stakeInfo.pendingRewards) + Number(userStats.stakeInfo.referralBonus)).toFixed(2)
-    : '0';
-
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-gray-400">
-          Overview of your staking and referral performance
+    <>
+      {/* Hero Section */}
+      <div className="text-center mb-16">
+        <h1 className="text-6xl font-bold mb-6 gradient-text">
+          Welcome to ZORIUM
+        </h1>
+        <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+          Stake, earn rewards, and build your referral network in the next generation DeFi platform
         </p>
+        {isConnected && (
+          <div>
+            <Link href="/dashboard" passHref legacyBehavior>
+              <Button size="lg" className="icon-container" asChild>
+                <a>
+                  Go to Dashboard
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </a>
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* Features Grid */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+        <Card className="p-6 bg-[#151515]/90 backdrop-blur-sm">
+          <div className="mb-6">
+            <div className="icon-container mb-4">
+              <Coins className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-100">Staking</h3>
+            <p className="text-gray-400">Earn rewards by staking your ZORIUM tokens</p>
+          </div>
+          <ul className="space-y-3">
+            <li className="list-item">
+              <div className="list-dot"></div>
+              Minimum stake: 100 ZORIUM
+            </li>
+            <li className="list-item">
+              <div className="list-dot"></div>
+              Lock periods: 30 to 365 days
+            </li>
+            <li className="list-item">
+              <div className="list-dot"></div>
+              Up to 300% reward multiplier
+            </li>
+          </ul>
+        </Card>
+
+        <Card className="p-6 bg-[#151515]/90 backdrop-blur-sm">
+          <div className="mb-6">
+            <div className="icon-container mb-4">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-100">Referral Program</h3>
+            <p className="text-gray-400">Multiply your earnings through our referral system</p>
+          </div>
+          <ul className="space-y-3">
+            <li className="list-item">
+              <div className="list-dot"></div>
+              Up to 3 levels of referrals
+            </li>
+            <li className="list-item">
+              <div className="list-dot"></div>
+              15% reward from direct referrals
+            </li>
+            <li className="list-item">
+              <div className="list-dot"></div>
+              Additional bonuses for active referrers
+            </li>
+          </ul>
+        </Card>
+
+        <Card className="p-6 bg-[#151515]/90 backdrop-blur-sm">
+          <div className="mb-6">
+            <div className="icon-container mb-4">
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-100">User Levels</h3>
+            <p className="text-gray-400">Unlock better rewards as you level up</p>
+          </div>
+          <ul className="space-y-3">
+            <li className="list-item">
+              <div className="list-dot"></div>
+              Bronze: Start Level (0% bonus)
+            </li>
+            <li className="list-item">
+              <div className="list-dot"></div>
+              Silver: 1M+ ZORIUM (10% bonus)
+            </li>
+            <li className="list-item">
+              <div className="list-dot"></div>
+              Gold: 10M+ ZORIUM (25% bonus)
+            </li>
+            <li className="list-item">
+              <div className="list-dot"></div>
+              Platinum: 100M+ ZORIUM (50% bonus)
+            </li>
+          </ul>
+        </Card>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <StatCard 
-          title="Your Stake"
-          value={`${userStats?.totalStaked ?? '0'} ZRM`}
-          icon={<Wallet className="w-6 h-6 text-primary" />}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <StatsCard 
+          title="Total Staked" 
+          value={`${stats.totalStaked} ZRM`} 
+          icon={<Wallet className="w-8 h-8 text-white" />} 
         />
-        <StatCard 
-          title="Lock Period"
-          value={userStats?.stakeInfo ? `${Math.floor(userStats.stakeInfo.lockPeriod / 86400)} Days` : 'No Active Stake'}
-          icon={<Clock className="w-6 h-6 text-primary" />}
+        <StatsCard 
+          title="Reward Pool" 
+          value={`${stats.rewardPool} ZRM`} 
+          icon={<Coins className="w-8 h-8 text-white" />} 
         />
-        <StatCard 
-          title="Referrals"
-          value={userStats?.referralCount?.toString() ?? '0'}
-          description={`${referralInfo.referrals?.filter(r => r.isActive).length || 0} Active`}
-          icon={<Users className="w-6 h-6 text-primary" />}
+        <StatsCard 
+          title="Total Users" 
+          value="Coming Soon" 
+          icon={<Users className="w-8 h-8 text-white" />} 
         />
-        <StatCard 
-          title="Pending Rewards"
-          value={`${totalPendingRewards} ZRM`}
-          icon={<Gift className="w-6 h-6 text-primary" />}
-          description={userStats?.stakeInfo?.referralBonus && 
-            Number(userStats.stakeInfo.referralBonus) > 0 
-              ? `Including ${userStats.stakeInfo.referralBonus} ZRM from Referrals` 
-              : undefined}
+        <StatsCard 
+          title="Total Burned" 
+          value={`${stats.totalBurned} ZRM`} 
+          icon={<TrendingUp className="w-8 h-8 text-white" />} 
         />
       </div>
-
-      {/* Level Progress */}
-      {userStats && (
-        <div className="mb-12">
-          <LevelProgress
-            level={userStats.level}
-            progress={userStats.levelProgress}
-            currentAmount={userStats.totalStaked}
-            nextThreshold={userStats.nextLevelThreshold}
-            bonus={userStats.stakeInfo?.levelBonus}
-          />
-        </div>
-      )}
-
-      {/* Active Stake Info */}
-      {userStats?.stakeInfo ? (
-        <div className="space-y-6 mb-12">
-          <StakeStats
-            amount={userStats.stakeInfo.totalAmount}
-            multiplier={userStats.stakeInfo.multiplier}
-            periodDays={Math.floor(userStats.stakeInfo.lockPeriod / 86400)}
-            pendingRewards={userStats.stakeInfo.pendingRewards}
-            levelBonus={userStats.stakeInfo.levelBonus}
-            referralBonus={userStats.stakeInfo.referralBonus}
-          />
-
-          <Card className="p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              {Number(totalPendingRewards) > 0 && !userStats.stakeInfo.isLocked && (
-                <Button onClick={() => actions.claim()} className="flex-1">
-                  Claim {totalPendingRewards} ZRM
-                </Button>
-              )}
-              {!userStats.stakeInfo.isLocked && (
-                <Button 
-                  variant="outline" 
-                  onClick={() => actions.unstake()}
-                  className="flex-1"
-                >
-                  Unstake {userStats.stakeInfo.totalAmount} ZRM
-                </Button>
-              )}
-            </div>
-
-            {userStats.stakeInfo.isLocked && (
-              <div className="mt-4">
-                <UnlockTimer
-                  timeRemaining={userStats.stakeInfo.timeRemaining}
-                  unlockTime={userStats.stakeInfo.unlockTime}
-                  className="justify-center"
-                />
-              </div>
-            )}
-          </Card>
-        </div>
-      ) : (
-        <Card className="mb-12 p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-primary/10 rounded-lg">
-              <Wallet className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-1">No Active Stake</h3>
-              <p className="text-sm text-gray-400">
-                Start staking to earn rewards and increase your level
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Global Stats */}
-      <Card className="mb-12">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold mb-6">Global Statistics</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm text-gray-400 mb-1">Total Value Staked</p>
-              <p className="text-2xl font-bold">{stats.totalStaked} ZRM</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-400 mb-1">Total Reward Pool</p>
-              <p className="text-2xl font-bold">{stats.rewardPool} ZRM</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-400 mb-1">Total Burned</p>
-              <p className="text-2xl font-bold">{stats.totalBurned} ZRM</p>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ActionCard 
-            title="Stake Tokens"
-            description="Lock your tokens and earn rewards"
-            icon={<Wallet className="w-6 h-6 text-white" />}
-            href="/staking"
-          />
-          <ActionCard 
-            title="Referral Program"
-            description="Invite friends and earn additional rewards"
-            icon={<Users className="w-6 h-6 text-white" />}
-            href="/referral"
-          />
-        </div>
-      </div>
-    </div>
+    </>
   );
 }

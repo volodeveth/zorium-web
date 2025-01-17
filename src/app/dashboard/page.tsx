@@ -84,12 +84,14 @@ export default function Dashboard() {
 
   if (!address) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <h1 className="text-2xl font-bold mb-4">Connect your wallet to continue</h1>
-        <p className="text-gray-400 text-center mb-8">
-          You need to connect your wallet to access the dashboard
-        </p>
-      </div>
+      <>
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <h1 className="text-2xl font-bold mb-4">Connect your wallet to continue</h1>
+          <p className="text-gray-400 text-center mb-8">
+            You need to connect your wallet to access the dashboard
+          </p>
+        </div>
+      </>
     );
   }
 
@@ -98,7 +100,7 @@ export default function Dashboard() {
     : '0';
 
   return (
-    <div>
+    <>
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
         <p className="text-gray-400">
@@ -244,6 +246,6 @@ export default function Dashboard() {
           />
         </div>
       </div>
-    </div>
+    </>
   );
 }

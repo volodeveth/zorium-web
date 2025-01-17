@@ -174,12 +174,14 @@ export default function Staking() {
 
   if (!address) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <h1 className="text-2xl font-bold mb-4">Connect your wallet to continue</h1>
-        <p className="text-gray-400 text-center mb-8">
-          You need to connect your wallet to access staking features
-        </p>
-      </div>
+      <>
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <h1 className="text-2xl font-bold mb-4">Connect your wallet to continue</h1>
+          <p className="text-gray-400 text-center mb-8">
+            You need to connect your wallet to access staking features
+          </p>
+        </div>
+      </>
     );
   }
 
@@ -187,7 +189,7 @@ export default function Staking() {
   const isStakeLocked = hasActiveStake && userStats?.stakeInfo?.isLocked;
 
   return (
-    <div>
+    <>
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Staking</h1>
         <p className="text-gray-400">
@@ -279,7 +281,7 @@ export default function Staking() {
           periodMultiplier={STAKING_PERIODS[selectedPeriod].multiplier}
           levelBonus={userStats?.stakeInfo?.levelBonus ?? 0}
           hasReferralBonus={userStats?.referrer !== undefined && 
-                           userStats.referrer !== '0x0000000000000000000000000000000000000000'}
+                          userStats.referrer !== '0x0000000000000000000000000000000000000000'}
         />
       )}
 
@@ -357,6 +359,6 @@ export default function Staking() {
           </Button>
         </div>
       </Card>
-    </div>
+    </>
   );
 }
