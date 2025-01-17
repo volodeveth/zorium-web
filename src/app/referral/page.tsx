@@ -185,7 +185,7 @@ const ClaimInfoCard = ({ isLocked, timeRemaining, totalRewards }: {
   </Card>
 );
 
-export default function Referral() {
+export default function Page() {
   const { address } = useAccount();
   const { userStats, referralInfo } = useZorium();
   const [copied, setCopied] = React.useState(false);
@@ -238,19 +238,19 @@ export default function Referral() {
 
   if (!address) {
     return (
-      <>
+      <section className="container mx-auto px-4 pt-24">
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <h1 className="text-2xl font-bold mb-4">Connect your wallet to continue</h1>
           <p className="text-gray-400 text-center mb-8">
             You need to connect your wallet to access the referral program
           </p>
         </div>
-      </>
+      </section>
     );
   }
 
   return (
-    <>
+    <section className="container mx-auto px-4 pt-24">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Referral Program</h1>
         <p className="text-gray-400">
@@ -387,82 +387,82 @@ export default function Referral() {
         ) : (
           <Card className="p-12 text-center">
             <Shield className="w-12 h-12 text-primary/50 mx-auto mb-4" />
-              <p className="text-gray-400">
-                Stake at least 100 ZRM to activate referral program
-              </p>
-              <Link href="/staking" passHref>
-                <Button className="mt-4">
-                  Go to Staking
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-            </Card>
-          )}
-        </div>
+            <p className="text-gray-400">
+              Stake at least 100 ZRM to activate referral program
+            </p>
+            <Link href="/staking" passHref>
+              <Button className="mt-4">
+                Go to Staking
+                <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </Card>
+        )}
+      </div>
 
-        {/* Requirements */}
-        <Card>
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Shield className="w-5 h-5 text-primary" />
+      {/* Requirements */}
+      <Card>
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Shield className="w-5 h-5 text-primary" />
+            </div>
+            <h2 className="text-xl font-semibold">Requirements & Benefits</h2>
+          </div>
+          
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg mt-1">
+                  <Users className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">Minimum Stake Required</p>
+                  <p className="text-sm text-gray-400">
+                    Need at least 100 ZRM staked to become a referrer
+                  </p>
+                </div>
               </div>
-              <h2 className="text-xl font-semibold">Requirements & Benefits</h2>
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg mt-1">
+                  <Clock className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">Active Stake</p>
+                  <p className="text-sm text-gray-400">
+                    Must maintain an active stake to earn referral rewards
+                  </p>
+                </div>
+              </div>
             </div>
             
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg mt-1">
-                    <Users className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Minimum Stake Required</p>
-                    <p className="text-sm text-gray-400">
-                      Need at least 100 ZRM staked to become a referrer
-                    </p>
-                  </div>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg mt-1">
+                  <Gift className="w-4 h-4 text-primary" />
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg mt-1">
-                    <Clock className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Active Stake</p>
-                    <p className="text-sm text-gray-400">
-                      Must maintain an active stake to earn referral rewards
-                    </p>
-                  </div>
+                <div>
+                  <p className="font-medium">Referral Bonus</p>
+                  <p className="text-sm text-gray-400">
+                    Your referrals get 10% extra rewards on their stakes
+                  </p>
                 </div>
               </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg mt-1">
-                    <Gift className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Referral Bonus</p>
-                    <p className="text-sm text-gray-400">
-                      Your referrals get 10% extra rewards on their stakes
-                    </p>
-                  </div>
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg mt-1">
+                  <BadgePercent className="w-4 h-4 text-primary" />
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg mt-1">
-                    <BadgePercent className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Commission Rates</p>
-                    <p className="text-sm text-gray-400">
-                      Earn 15% from direct referrals, 8% from level 2, and 5% from level 3
-                    </p>
-                  </div>
+                <div>
+                  <p className="font-medium">Commission Rates</p>
+                  <p className="text-sm text-gray-400">
+                    Earn 15% from direct referrals, 8% from level 2, and 5% from level 3
+                  </p>
                 </div>
               </div>
             </div>
           </div>
-        </Card>
-      </div>
-    </>
+        </div>
+      </Card>
+    </section>
   );
+}

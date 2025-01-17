@@ -135,7 +135,7 @@ const faqItems: FAQItemProps[] = [
   },
 ];
 
-export default function FAQ() {
+export default function Page() {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -145,7 +145,7 @@ export default function FAQ() {
   if (!mounted) return null;
 
   return (
-    <>
+    <section className="container mx-auto px-4 pt-24">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Frequently Asked Questions</h1>
@@ -194,6 +194,6 @@ export default function FAQ() {
           </div>
         </div>
       </Card>
-    </>
+    </section>
   );
 }

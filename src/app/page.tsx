@@ -26,7 +26,7 @@ const StatsCard = ({ title, value, icon }: StatsCardProps) => (
   </div>
 );
 
-export default function Home() {
+export default function Page() {
   const { stats } = useZorium();
   const { isConnected } = useAccount();
   const [mounted, setMounted] = React.useState(false);
@@ -38,7 +38,7 @@ export default function Home() {
   if (!mounted) return null;
 
   return (
-    <>
+    <section className="container mx-auto px-4 py-12">
       {/* Hero Section */}
       <div className="text-center mb-16">
         <h1 className="text-6xl font-bold mb-6 gradient-text">
@@ -163,6 +163,6 @@ export default function Home() {
           icon={<TrendingUp className="w-8 h-8 text-white" />} 
         />
       </div>
-    </>
+    </section>
   );
 }

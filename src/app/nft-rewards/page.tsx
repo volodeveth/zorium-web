@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Gift, ExternalLink } from 'lucide-react';
 
-export default function NFTRewards() {
+export default function Page() {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -15,7 +15,7 @@ export default function NFTRewards() {
   if (!mounted) return null;
 
   return (
-    <>
+    <section className="container mx-auto px-4 pt-24">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">NFT Rewards</h1>
         <p className="text-gray-400">
@@ -42,6 +42,6 @@ export default function NFTRewards() {
           </div>
         </div>
       </Card>
-    </>
+    </section>
   );
 }
