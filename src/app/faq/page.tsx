@@ -145,57 +145,55 @@ export default function FAQ() {
   if (!mounted) return null;
 
   return (
-    <main className="container mx-auto px-4 pt-24">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Frequently Asked Questions</h1>
-          <p className="text-gray-400">
-            Find answers to common questions about ZORIUM staking and referral system
-          </p>
-        </div>
-
-        {/* FAQ Grid */}
-        <div className="space-y-4 mb-12">
-          {faqItems.map((item, index) => (
-            <FAQItem
-              key={index}
-              question={item.question}
-              answer={item.answer}
-              icon={item.icon}
-            />
-          ))}
-        </div>
-
-        {/* Still Have Questions */}
-        <Card className="bg-primary/5 border-primary/20">
-          <div className="p-6 text-center">
-            <HelpCircle className="w-12 h-12 text-primary mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Still Have Questions?</h2>
-            <p className="text-gray-400 mb-4">
-              Join our community channels for additional support and updates
-            </p>
-            <div className="flex justify-center gap-4">
-              <a
-                href="https://x.com/zoriumtoken"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:text-primary-hover transition-colors"
-              >
-                Twitter
-              </a>
-              <a
-                href="https://t.me/zoriumtoken"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:text-primary-hover transition-colors"
-              >
-                Telegram
-              </a>
-            </div>
-          </div>
-        </Card>
+    <div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Frequently Asked Questions</h1>
+        <p className="text-gray-400">
+          Find answers to common questions about ZORIUM staking and referral system
+        </p>
       </div>
-    </main>
+
+      {/* FAQ Grid */}
+      <div className="space-y-4 mb-12">
+        {faqItems.map((item, index) => (
+          <FAQItem
+            key={index}
+            question={item.question}
+            answer={item.answer}
+            icon={item.icon}
+          />
+        ))}
+      </div>
+
+      {/* Still Have Questions */}
+      <Card className="bg-primary/5 border-primary/20">
+        <div className="p-6 text-center">
+          <HelpCircle className="w-12 h-12 text-primary mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Still Have Questions?</h2>
+          <p className="text-gray-400 mb-4">
+            Join our community channels for additional support and updates
+          </p>
+          <div className="flex justify-center gap-4">
+            <a
+              href="https://x.com/zoriumtoken"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:text-primary-hover transition-colors"
+            >
+              Twitter
+            </a>
+            <a
+              href="https://t.me/zoriumtoken"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:text-primary-hover transition-colors"
+            >
+              Telegram
+            </a>
+          </div>
+        </div>
+      </Card>
+    </div>
   );
 }

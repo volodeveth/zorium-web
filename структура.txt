@@ -37,27 +37,36 @@ D:.
 │           zoriumlogo.svg
 │
 └───src
+    │   middleware.ts
+    │   navigation.ts
+    │
     ├───app
     │   │   error.tsx
     │   │   globals.css
     │   │   layout.tsx
+    │   │   loading.tsx
     │   │   not-found.tsx
     │   │   page.tsx
     │   │   providers.tsx
     │   │
     │   ├───dashboard
+    │   │       loading.tsx
     │   │       page.tsx
     │   │
     │   ├───faq
+    │   │       loading.tsx
     │   │       page.tsx
     │   │
     │   ├───nft-rewards
+    │   │       loading.tsx
     │   │       page.tsx
     │   │
     │   ├───referral
+    │   │       loading.tsx
     │   │       page.tsx
     │   │
     │   └───staking
+    │           loading.tsx
     │           page.tsx
     │
     ├───components

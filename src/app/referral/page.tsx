@@ -238,158 +238,153 @@ export default function Referral() {
 
   if (!address) {
     return (
-      <main className="container mx-auto px-4 pt-24">
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <h1 className="text-2xl font-bold mb-4">Connect your wallet to continue</h1>
-          <p className="text-gray-400 text-center mb-8">
-            You need to connect your wallet to access the referral program
-          </p>
-        </div>
-      </main>
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <h1 className="text-2xl font-bold mb-4">Connect your wallet to continue</h1>
+        <p className="text-gray-400 text-center mb-8">
+          You need to connect your wallet to access the referral program
+        </p>
+      </div>
     );
   }
 
   return (
-    <main className="container mx-auto px-4 pt-24">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Referral Program</h1>
-          <p className="text-gray-400">
-            Invite friends to ZORIUM and earn rewards from their staking activities
-          </p>
-        </div>
+    <div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Referral Program</h1>
+        <p className="text-gray-400">
+          Invite friends to ZORIUM and earn rewards from their staking activities
+        </p>
+      </div>
 
-        {/* Claim Information */}
-        {userStats?.stakeInfo && (
-          <ClaimInfoCard 
-            isLocked={userStats.stakeInfo.isLocked}
-            timeRemaining={userStats.stakeInfo.timeRemaining}
-            totalRewards={userStats.stakeInfo.referralBonus}
-          />
-        )}
+      {/* Claim Information */}
+      {userStats?.stakeInfo && (
+        <ClaimInfoCard 
+          isLocked={userStats.stakeInfo.isLocked}
+          timeRemaining={userStats.stakeInfo.timeRemaining}
+          totalRewards={userStats.stakeInfo.referralBonus}
+        />
+      )}
 
-        {/* Referral Link Card */}
-        <Card className="mb-8">
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <LinkIcon className="w-5 h-5 text-primary" />
-              </div>
-              <h2 className="text-xl font-semibold">Your Referral Link</h2>
+      {/* Referral Link Card */}
+      <Card className="mb-8">
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <LinkIcon className="w-5 h-5 text-primary" />
             </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex-1 bg-background p-3 rounded-lg border border-gray-800">
-                <p className="text-gray-400 font-mono text-sm break-all">
-                  {referralLink}
-                </p>
-              </div>
-              <Button 
-                variant="outline"
-                onClick={copyToClipboard}
-                className="min-w-[120px]"
-              >
-                {copied ? (
-                  <span className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Copied
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Copy className="w-4 h-4" />
-                    Copy
-                  </span>
-                )}
-              </Button>
+            <h2 className="text-xl font-semibold">Your Referral Link</h2>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex-1 bg-background p-3 rounded-lg border border-gray-800">
+              <p className="text-gray-400 font-mono text-sm break-all">
+                {referralLink}
+              </p>
             </div>
+            <Button 
+              variant="outline"
+              onClick={copyToClipboard}
+              className="min-w-[120px]"
+            >
+              {copied ? (
+                <span className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Copied
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Copy className="w-4 h-4" />
+                  Copy
+                </span>
+              )}
+            </Button>
+          </div>
 
-            {totalPendingRewards > 0 && (
-              <div className="mt-6 p-4 bg-primary/10 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Gift className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Total Pending Rewards</p>
-                      <p className="text-sm text-gray-400">
-                        Claim available after stake unlock
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-primary">
-                      {userStats?.stakeInfo?.referralBonus} ZRM
+          {totalPendingRewards > 0 && (
+            <div className="mt-6 p-4 bg-primary/10 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Gift className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className="font-medium">Total Pending Rewards</p>
+                    <p className="text-sm text-gray-400">
+                      Claim available after stake unlock
                     </p>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* Level Stats */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Referral Statistics</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {referralStats.map((stats, index) => (
-              <ReferralLevelStats
-                key={index}
-                title={`Level ${index + 1} Referrals`}
-                stats={stats}
-                isActive={index === 0} // Only level 1 is currently active
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Your Level */}
-        {userStats && (
-          <div className="mb-8">
-            <LevelProgress
-              level={userStats.level}
-              progress={userStats.levelProgress}
-              currentAmount={userStats.totalStaked}
-              nextThreshold={userStats.nextLevelThreshold}
-              bonus={userStats.stakeInfo?.levelBonus}
-            />
-          </div>
-        )}
-
-        {/* Your Referrals */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Your Referrals</h2>
-          {userStats?.isActive ? (
-            referralInfo.isLoadingReferrals ? (
-              <div className="flex justify-center py-12">
-                <div className="flex items-center gap-2 text-primary">
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                  <span>Loading referrals...</span>
+                <div className="text-right">
+                  <p className="text-xl font-bold text-primary">
+                    {userStats?.stakeInfo?.referralBonus} ZRM
+                  </p>
                 </div>
               </div>
-            ) : referralInfo.referrals && referralInfo.referrals.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {referralInfo.referrals.map((referral) => (
-                  <ReferralCard 
-                    key={referral.address} 
-                    info={referral}
-                  />
-                ))}
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Level Stats */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Referral Statistics</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {referralStats.map((stats, index) => (
+            <ReferralLevelStats
+              key={index}
+              title={`Level ${index + 1} Referrals`}
+              stats={stats}
+              isActive={index === 0} // Only level 1 is currently active
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Your Level */}
+      {userStats && (
+        <div className="mb-8">
+          <LevelProgress
+            level={userStats.level}
+            progress={userStats.levelProgress}
+            currentAmount={userStats.totalStaked}
+            nextThreshold={userStats.nextLevelThreshold}
+            bonus={userStats.stakeInfo?.levelBonus}
+          />
+        </div>
+      )}
+
+      {/* Your Referrals */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Your Referrals</h2>
+        {userStats?.isActive ? (
+          referralInfo.isLoadingReferrals ? (
+            <div className="flex justify-center py-12">
+              <div className="flex items-center gap-2 text-primary">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span>Loading referrals...</span>
               </div>
-            ) : (
-              <Card className="p-12 text-center">
-                <Gift className="w-12 h-12 text-primary/50 mx-auto mb-4" />
-                <p className="text-gray-400">
-                  Share your referral link to start earning rewards
-                </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Earn up to 15% from your referrals' rewards
-                </p>
-                </Card>
-              )
-            }
+            </div>
+          ) : referralInfo.referrals && referralInfo.referrals.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {referralInfo.referrals.map((referral) => (
+                <ReferralCard 
+                  key={referral.address} 
+                  info={referral}
+                />
+              ))}
+            </div>
           ) : (
             <Card className="p-12 text-center">
-              <Shield className="w-12 h-12 text-primary/50 mx-auto mb-4" />
+              <Gift className="w-12 h-12 text-primary/50 mx-auto mb-4" />
+              <p className="text-gray-400">
+                Share your referral link to start earning rewards
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Earn up to 15% from your referrals' rewards
+              </p>
+            </Card>
+          )
+        ) : (
+          <Card className="p-12 text-center">
+            <Shield className="w-12 h-12 text-primary/50 mx-auto mb-4" />
               <p className="text-gray-400">
                 Stake at least 100 ZRM to activate referral program
               </p>
@@ -467,6 +462,5 @@ export default function Referral() {
           </div>
         </Card>
       </div>
-    </main>
+    </div>
   );
-}
