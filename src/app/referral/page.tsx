@@ -22,6 +22,12 @@ import {
 import Link from 'next/link';
 import { LevelProgress } from '@/components/ui/level-progress';
 import { type ReferralInfo } from '@/hooks/useZorium';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Referral Program | ZORIUM - Earn From Your Network',
+  description: 'Join ZORIUM's three-level referral program. Earn up to 15% from direct referrals and additional rewards from your entire referral network.'
+};
 
 interface ReferralStats {
   level: number;
@@ -249,7 +255,7 @@ export default function Page() {
     );
   }
 
-  return (
+return (
     <section className="container mx-auto px-4 pt-24">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Referral Program</h1>

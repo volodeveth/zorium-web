@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { LevelProgress } from '@/components/ui/level-progress';
 import { UnlockTimer } from '@/components/ui/unlock-timer';
 import { StakeStats } from '@/components/ui/stake-stats';
+import { Metadata } from 'next';
 
 interface StatCardProps {
   title: string;

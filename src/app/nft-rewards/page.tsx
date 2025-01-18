@@ -4,6 +4,12 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Gift, ExternalLink } from 'lucide-react';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'NFT Rewards | ZORIUM - Claim Your NFT Benefits',
+  description: 'Claim exclusive rewards for holding ZORIUM NFTs. Access special benefits and boost your earnings through our NFT rewards program.'
+};
 
 export default function Page() {
   const [mounted, setMounted] = React.useState(false);
