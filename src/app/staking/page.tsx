@@ -9,12 +9,6 @@ import { Lock, Clock, TrendingUp, AlertCircle, History } from 'lucide-react';
 import { LevelProgress } from '@/components/ui/level-progress';
 import { UnlockTimer } from '@/components/ui/unlock-timer';
 import { StakeStats } from '@/components/ui/stake-stats';
-import { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Staking | ZORIUM - Earn Rewards Up to 300%',
-  description: 'Stake your ZORIUM tokens and earn rewards with multipliers up to 300%. Choose flexible lock periods from 30 to 365 days and boost your earnings with level bonuses.'
-};
 
 const STAKING_PERIODS = [
   { days: 30, multiplier: 100 },
