@@ -1,6 +1,5 @@
 'use client';
 
-import type { Metadata } from 'next';
 import React from 'react';
 import { useAccount } from 'wagmi';
 import { Card } from '@/components/ui/card';
@@ -10,16 +9,6 @@ import { Lock, Clock, TrendingUp, AlertCircle, History } from 'lucide-react';
 import { LevelProgress } from '@/components/ui/level-progress';
 import { UnlockTimer } from '@/components/ui/unlock-timer';
 import { StakeStats } from '@/components/ui/stake-stats';
-
-export const metadata: Metadata = {
-  title: 'Staking | ZORIUM - Earn Rewards Up to 300%',
-  description: 'Stake your ZORIUM tokens and earn rewards with multipliers up to 300%. Choose flexible lock periods from 30 to 365 days and boost your earnings with level bonuses.',
-  openGraph: {
-    title: 'Staking | ZORIUM',
-    description: 'Stake your ZORIUM tokens and earn rewards with multipliers up to 300%',
-    images: ['/staking-og.png'],
-  }
-};
 
 const STAKING_PERIODS = [
   { days: 30, multiplier: 100 },
@@ -370,51 +359,6 @@ export default function Page() {
           </Button>
         </div>
       </Card>
-
-      {/* Info Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="p-6">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Clock className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-medium mb-2">Lock Periods</h3>
-              <p className="text-sm text-gray-400">
-                Choose from 30 to 365 days lock periods. Longer periods provide higher reward multipliers.
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-medium mb-2">Rewards</h3>
-              <p className="text-sm text-gray-400">
-                Earn up to 300% APY with level bonuses and referral rewards combined.
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Lock className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-medium mb-2">Security</h3>
-              <p className="text-sm text-gray-400">
-                Your tokens are securely locked in the smart contract until the lock period ends.
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
     </section>
   );
 }

@@ -14,40 +14,20 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
+// Базові метадані, які будуть розширені в конкретних файлах metadata.ts
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://zorium.xyz'),
   title: {
-    default: 'ZORIUM - Next Generation DeFi Platform',
-    template: '%s | ZORIUM'
+    template: '%s | ZORIUM',
+    default: 'ZORIUM - Next Generation DeFi Platform'
   },
   description: 'Stake, earn rewards, and build your referral network with ZORIUM',
   applicationName: 'ZORIUM',
   keywords: ['DeFi', 'Staking', 'Cryptocurrency', 'Blockchain', 'Rewards', 'Referral'],
   authors: [{ name: 'ZORIUM Team' }],
-  creator: 'ZORIUM Team',
-  publisher: 'ZORIUM',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#0A0B0D' },
-    { media: '(prefers-color-scheme: light)', color: '#0A0B0D' }
-  ],
-  colorScheme: 'dark',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: 'cover',
-  },
+  themeColor: '#0A0B0D',
   icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: '32x32' },
-      { url: '/icons/zoriumlogo.svg', type: 'image/svg+xml' }
-    ],
+    icon: '/icons/zoriumlogo.svg',
     shortcut: '/favicon.ico',
     apple: '/apple-touch-icon.png',
     other: [
@@ -58,6 +38,13 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/manifest.json',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: 'cover',
+  },
   verification: {
     google: 'google-site-verification',
     other: {
@@ -68,8 +55,6 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://zorium.xyz',
-    title: 'ZORIUM - Next Generation DeFi Platform',
-    description: 'Stake, earn rewards, and build your referral network with ZORIUM',
     siteName: 'ZORIUM',
     images: [
       {
@@ -82,11 +67,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ZORIUM - Next Generation DeFi Platform',
-    description: 'Stake, earn rewards, and build your referral network with ZORIUM',
     site: '@zoriumtoken',
     creator: '@zoriumtoken',
-    images: ['/og-image.png'],
   },
   robots: {
     index: true,
@@ -96,24 +78,18 @@ export const metadata: Metadata = {
       index: true,
       follow: true,
       noimageindex: false,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
     },
   },
-  alternates: {
-    canonical: 'https://zorium.xyz',
-  },
   category: 'finance',
-  bookmarks: 'https://zorium.xyz',
-  assets: ['https://zorium.xyz/assets'],
 };
 
 interface RootLayoutProps {
   children: React.ReactNode;
 }
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function RootLayout({
+  children,
+}: RootLayoutProps) {
   return (
     <html 
       lang="en" 
@@ -147,8 +123,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <meta name="msapplication-TileColor" content="#0A0B0D" />
         <meta name="msapplication-tap-highlight" content="no" />
         <meta name="format-detection" content="telephone=no" />
-        
-        {/* PWA and App Icons */}
+
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icons/zoriumlogo.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -157,40 +132,23 @@ export default function RootLayout({ children }: RootLayoutProps) {
           href="/manifest.json" 
           crossOrigin="use-credentials" 
         />
-
-        {/* Preconnect to Important Origins */}
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-
-        {/* Preload Critical Assets */}
-        <link
-          rel="preload"
-          as="image"
-          href="/icons/zoriumlogo.svg"
-          type="image/svg+xml"
-        />
       </head>
       <body 
         className={`${inter.className} min-h-screen bg-background text-white antialiased overflow-x-hidden`}
         suppressHydrationWarning
       >
         <Providers>
-          <div className="relative flex min-h-screen flex-col">
-            <Header />
-            
-            <main className="flex-1 mt-16">
-              <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <PageTransition>
-                  {children}
-                </PageTransition>
-              </div>
-            </main>
-            
-            <Footer />
-          </div>
+          <Header />
+          
+          <main className="mt-16 min-h-[calc(100vh-4rem)]">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <PageTransition>
+                {children}
+              </PageTransition>
+            </div>
+          </main>
+          
+          <Footer />
         </Providers>
       </body>
     </html>
