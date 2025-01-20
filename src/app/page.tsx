@@ -1,5 +1,6 @@
 'use client';
 
+import { Metadata } from 'next';
 import React from "react";
 import { useZorium } from "@/hooks/useZorium";
 import { useAccount } from 'wagmi';
@@ -7,6 +8,16 @@ import Link from 'next/link';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wallet, Coins, Users, TrendingUp, ArrowRight } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: 'ZORIUM - Next Generation DeFi Platform',
+  description: 'Stake, earn rewards, and build your referral network with ZORIUM - the next generation DeFi platform offering up to 300% reward multiplier and multi-level referral system.',
+  openGraph: {
+    title: 'ZORIUM - Next Generation DeFi Platform',
+    description: 'Stake, earn rewards, and build your referral network with ZORIUM',
+    images: ['/og-image.png'],
+  }
+};
 
 interface StatsCardProps {
   title: string;
@@ -140,7 +151,7 @@ export default function Page() {
         </Card>
       </div>
 
-      {/* Stats Grid - Оновлена версія */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
         <StatsCard 
           title="Total Staked" 

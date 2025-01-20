@@ -1,5 +1,6 @@
 'use client';
 
+import type { Metadata } from 'next';
 import React from 'react';
 import { useAccount } from 'wagmi';
 import { Card } from '@/components/ui/card';
@@ -10,6 +11,16 @@ import Link from 'next/link';
 import { LevelProgress } from '@/components/ui/level-progress';
 import { UnlockTimer } from '@/components/ui/unlock-timer';
 import { StakeStats } from '@/components/ui/stake-stats';
+
+export const metadata: Metadata = {
+  title: 'Dashboard | ZORIUM - Track Your Staking and Rewards',
+  description: 'Monitor your ZORIUM staking performance, track rewards, manage your stakes and check referral earnings all in one place.',
+  openGraph: {
+    title: 'Dashboard | ZORIUM',
+    description: 'Monitor your ZORIUM staking performance and earnings',
+    images: ['/dashboard-og.png'],
+  }
+};
 
 interface StatCardProps {
   title: string;

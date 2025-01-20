@@ -45,28 +45,34 @@ D:.
     │   │   globals.css
     │   │   layout.tsx
     │   │   loading.tsx
+    │   │   metadata.ts
     │   │   not-found.tsx
     │   │   page.tsx
     │   │   providers.tsx
     │   │
     │   ├───dashboard
     │   │       loading.tsx
+    │   │       metadata.ts
     │   │       page.tsx
     │   │
     │   ├───faq
     │   │       loading.tsx
+    │   │       metadata.ts
     │   │       page.tsx
     │   │
     │   ├───nft-rewards
     │   │       loading.tsx
+    │   │       metadata.ts
     │   │       page.tsx
     │   │
     │   ├───referral
     │   │       loading.tsx
+    │   │       metadata.ts
     │   │       page.tsx
     │   │
     │   └───staking
     │           loading.tsx
+    │           metadata.ts
     │           page.tsx
     │
     ├───components

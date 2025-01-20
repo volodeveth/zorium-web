@@ -1,5 +1,6 @@
 'use client';
 
+import type { Metadata } from 'next';
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import {
@@ -11,8 +12,21 @@ import {
   Gift,
   Clock,
   Flame,
-  Shield
+  Shield,
+  Bell,
+  Zap,
+  Layers
 } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'FAQ | ZORIUM - Frequently Asked Questions',
+  description: 'Find answers to common questions about ZORIUM platform, including staking mechanics, referral system, rewards calculation, and platform features.',
+  openGraph: {
+    title: 'FAQ | ZORIUM',
+    description: 'Everything you need to know about ZORIUM platform',
+    images: ['/faq-og.png'],
+  }
+};
 
 interface FAQItemProps {
   question: string;
@@ -83,7 +97,7 @@ const faqItems: FAQItemProps[] = [
         </ul>
       </div>
     ),
-    icon: <TrendingUp className="w-5 h-5 text-primary" />
+    icon: <Layers className="w-5 h-5 text-primary" />
   },
   {
     question: "Can I unstake early?",
@@ -133,6 +147,35 @@ const faqItems: FAQItemProps[] = [
     ),
     icon: <Shield className="w-5 h-5 text-primary" />
   },
+  {
+    question: "How are rewards calculated?",
+    answer: (
+      <div className="space-y-1">
+        <p>Rewards are calculated based on multiple factors:</p>
+        <ul className="list-disc pl-4 space-y-1">
+          <li>Base APR (5%)</li>
+          <li>Lock period multiplier (1x to 3x)</li>
+          <li>User level bonus (0% to 50%)</li>
+          <li>Referral bonuses (if applicable)</li>
+        </ul>
+      </div>
+    ),
+    icon: <Zap className="w-5 h-5 text-primary" />
+  },
+  {
+    question: "How do I receive updates about new features?",
+    answer: (
+      <div className="space-y-1">
+        <p>Stay updated through our official channels:</p>
+        <ul className="list-disc pl-4 space-y-1">
+          <li>Join our Telegram group</li>
+          <li>Follow us on Twitter/X</li>
+          <li>Check announcements on our platform</li>
+        </ul>
+      </div>
+    ),
+    icon: <Bell className="w-5 h-5 text-primary" />
+  }
 ];
 
 export default function Page() {
