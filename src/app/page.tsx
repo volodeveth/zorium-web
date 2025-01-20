@@ -1,5 +1,8 @@
 'use client';
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 import React from "react";
 import { useZorium } from "@/hooks/useZorium";
 import { useAccount } from 'wagmi';
