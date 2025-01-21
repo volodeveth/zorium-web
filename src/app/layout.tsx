@@ -1,11 +1,11 @@
+// src/app/layout.tsx
+
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import '@/styles/animations.css';
 import { Providers } from './providers';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
-import { PageTransition } from '@/components/transitions/page-transition';
+import LayoutClient from './layout-client';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -104,13 +104,11 @@ export const metadata: Metadata = {
   category: 'finance',
 };
 
-interface RootLayoutProps {
-  children: React.ReactNode;
-}
-
 export default function RootLayout({
   children,
-}: RootLayoutProps) {
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html 
       lang="en" 
@@ -145,14 +143,12 @@ export default function RootLayout({
         <meta name="msapplication-tap-highlight" content="no" />
         <meta name="format-detection" content="telephone=no" />
 
-        {/* Preconnect to Important Origins */}
         <link
           rel="preconnect"
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
 
-        {/* Icons */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icons/zoriumlogo.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -162,7 +158,6 @@ export default function RootLayout({
           crossOrigin="use-credentials" 
         />
 
-        {/* Preload Critical Assets */}
         <link
           rel="preload"
           as="image"
@@ -175,19 +170,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
-          <div className="relative flex min-h-screen flex-col">
-            <Header />
-            
-            <main className="flex-1 mt-16">
-              <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <PageTransition>
-                  {children}
-                </PageTransition>
-              </div>
-            </main>
-            
-            <Footer />
-          </div>
+          <LayoutClient>{children}</LayoutClient>
         </Providers>
       </body>
     </html>

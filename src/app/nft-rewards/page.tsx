@@ -1,50 +1,40 @@
-'use client';
+// src/app/nft-rewards/page.tsx
+import type { Metadata } from 'next';
+import NFTRewardsClient from './nft-rewards-client';
+
+export const metadata: Metadata = {
+  title: 'NFT Rewards | ZORIUM',
+  description: 'Claim exclusive rewards and special benefits for holding ZORIUM NFTs. Access unique features and boost your earnings through our NFT rewards program.',
+  keywords: [
+    'ZORIUM NFT',
+    'NFT rewards',
+    'crypto NFT',
+    'DeFi NFT',
+    'NFT benefits',
+    'NFT staking',
+    'exclusive rewards'
+  ],
+  openGraph: {
+    title: 'ZORIUM NFT Rewards - Exclusive Benefits',
+    description: 'Access exclusive benefits and boost your earnings with ZORIUM NFTs.',
+    images: [{
+      url: '/nft-rewards-og.png',
+      width: 1200,
+      height: 630,
+      alt: 'ZORIUM NFT Rewards'
+    }]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ZORIUM NFT Rewards',
+    description: 'Access exclusive benefits and boost your earnings with ZORIUM NFTs.',
+    images: ['/nft-rewards-og.png']
+  }
+};
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-import React from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Gift, ExternalLink } from 'lucide-react';
-
-export default function Page() {
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  return (
-    <section className="container mx-auto px-4 pt-24">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">NFT Rewards</h1>
-        <p className="text-gray-400">
-          Claim rewards for your Zorium NFTs
-        </p>
-      </div>
-
-      <Card className="p-8 text-center">
-        <div className="flex flex-col items-center gap-6">
-          <Gift className="w-16 h-16 text-primary" />
-          <div>
-            <h2 className="text-2xl font-bold mb-2">NFT Rewards Available</h2>
-            <p className="text-gray-400 mb-6">
-              You can now claim your rewards for holding Zorium NFTs on our dedicated rewards platform.
-            </p>
-            <Button 
-              onClick={() => window.open('https://www.stack.so/leaderboard/zoriumairdropr5leaderboard', '_blank')}
-              size="lg"
-              className="inline-flex items-center gap-2"
-            >
-              Claim Rewards
-              <ExternalLink className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </Card>
-    </section>
-  );
+export default function NFTRewardsPage() {
+  return <NFTRewardsClient />;
 }
