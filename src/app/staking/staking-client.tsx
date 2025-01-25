@@ -1,4 +1,3 @@
-// src/app/staking/staking-client.tsx
 'use client';
 
 import React from 'react';
@@ -10,6 +9,8 @@ import { Lock, Clock, TrendingUp, AlertCircle, History } from 'lucide-react';
 import { LevelProgress } from '@/components/ui/level-progress';
 import { UnlockTimer } from '@/components/ui/unlock-timer';
 import { StakeStats } from '@/components/ui/stake-stats';
+import { Modal } from '@/components/ui/modal';
+import { useToast } from '@/hooks/useToast';
 
 const STAKING_PERIODS = [
   { days: 30, multiplier: 100 },
@@ -24,6 +25,31 @@ interface PeriodCardProps {
   selected: boolean;
   onClick: () => void;
 }
+
+interface EstimatedRewardsProps {
+  baseAmount: string;
+  periodMultiplier: number;
+  levelBonus: number;
+  hasReferralBonus?: boolean;
+}
+
+const StakeHistory = ({ totalHistoricalStake }: { totalHistoricalStake?: string }) => {
+  if (!totalHistoricalStake || Number(totalHistoricalStake) === 0) return null;
+
+  return (
+    <Card className="mb-4 p-4">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-primary/10 rounded-lg">
+          <History className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-sm font-medium text-gray-400">Total Historical Stake</h3>
+          <p className="text-lg font-bold">{totalHistoricalStake} ZRM</p>
+        </div>
+      </div>
+    </Card>
+  );
+};
 
 const PeriodCard = ({ days, multiplier, selected, onClick }: PeriodCardProps) => (
   <Card 
@@ -48,13 +74,6 @@ const PeriodCard = ({ days, multiplier, selected, onClick }: PeriodCardProps) =>
     </div>
   </Card>
 );
-
-interface EstimatedRewardsProps {
-  baseAmount: string;
-  periodMultiplier: number;
-  levelBonus: number;
-  hasReferralBonus?: boolean;
-}
 
 const EstimatedRewards = ({ 
   baseAmount, 
@@ -124,27 +143,10 @@ const EstimatedRewards = ({
   );
 };
 
-const StakeHistory = ({ totalHistoricalStake }: { totalHistoricalStake?: string }) => {
-  if (!totalHistoricalStake || Number(totalHistoricalStake) === 0) return null;
-
-  return (
-    <Card className="mb-4 p-4">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <History className="w-5 h-5 text-primary" />
-        </div>
-        <div>
-          <h3 className="text-sm font-medium text-gray-400">Total Historical Stake</h3>
-          <p className="text-lg font-bold">{totalHistoricalStake} ZRM</p>
-        </div>
-      </div>
-    </Card>
-  );
-};
-
 export default function StakingClient() {
   const { address } = useAccount();
-  const { userStats, actions } = useZorium();
+  const { userStats, actions, modals } = useZorium();
+  const { showToast } = useToast(); // Додаємо useToast
   const [amount, setAmount] = React.useState('');
   const [selectedPeriod, setSelectedPeriod] = React.useState<number>(0);
   const [isStaking, setIsStaking] = React.useState(false);
@@ -165,13 +167,45 @@ export default function StakingClient() {
     }
   };
 
+  const handleClaimAndStake = async () => {
+    await actions.claim();
+    modals.setShowWarningModal(false);
+  };
+
+  const handleForceStake = async () => {
+    const stakeAmount = amount.trim();
+  
+    if (!stakeAmount || Number(stakeAmount) < 100) {
+      showToast('Minimum stake amount is 100 ZRM', 'error');
+      return;
+    }
+  
+    if (isStaking) return;
+  
+    setIsStaking(true);
+    try {
+      const success = await actions.executeStake(stakeAmount, selectedPeriod);
+      if (success) {
+        setAmount('');
+        modals.setShowWarningModal(false);
+      }
+    } catch (error) {
+      console.error('Force stake error:', error);
+      showToast(error instanceof Error ? error.message : 'Failed to stake', 'error');
+    } finally {
+      setIsStaking(false);
+    }
+  };
+
   const totalPendingRewards = userStats?.stakeInfo
     ? (Number(userStats.stakeInfo.pendingRewards) + Number(userStats.stakeInfo.referralBonus)).toFixed(2)
     : '0';
 
   const hasStakeHistory = userStats?.totalHistoricalStake && Number(userStats.totalHistoricalStake) > 0;
+  const hasActiveStake = userStats?.stakeInfo && Number(userStats.stakeInfo.totalAmount) > 0;
+  const isStakeLocked = hasActiveStake && userStats?.stakeInfo?.isLocked;
 
-  if (!mounted) return null;
+if (!mounted) return null;
 
   if (!address) {
     return (
@@ -186,180 +220,218 @@ export default function StakingClient() {
     );
   }
 
-  const hasActiveStake = userStats?.stakeInfo && Number(userStats.stakeInfo.totalAmount) > 0;
-  const isStakeLocked = hasActiveStake && userStats?.stakeInfo?.isLocked;
-
   return (
-    <section className="container mx-auto px-4 pt-24">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Staking</h1>
-        <p className="text-gray-400">
-          Lock your ZORIUM tokens to earn rewards and increase your level
-        </p>
-      </div>
-
-      {/* Historical Stake Information */}
-      {hasStakeHistory && (
-        <StakeHistory totalHistoricalStake={userStats?.totalHistoricalStake} />
-      )}
-
-      {/* Current Stake Status */}
-      {hasActiveStake && userStats?.stakeInfo ? (
-        <div className="space-y-6 mb-8">
-          <StakeStats
-            amount={userStats.stakeInfo.totalAmount || '0'}
-            multiplier={userStats.stakeInfo.multiplier}
-            periodDays={Math.floor(userStats.stakeInfo.lockPeriod / 86400)}
-            pendingRewards={userStats.stakeInfo.pendingRewards}
-            levelBonus={userStats.stakeInfo.levelBonus}
-            referralBonus={userStats.stakeInfo.referralBonus}
-            hasReferralBonus={userStats.referrer !== undefined && 
-                          userStats.referrer !== '0x0000000000000000000000000000000000000000'}
-          />
-
-          <Card className="p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              {Number(totalPendingRewards) > 0 && !isStakeLocked && (
-                <Button onClick={() => actions.claim()} className="flex-1">
-                  Claim {totalPendingRewards} ZRM
-                </Button>
-              )}
-              {!isStakeLocked && (
-                <Button 
-                  variant="outline" 
-                  onClick={() => actions.unstake()}
-                  className="flex-1"
-                >
-                  Unstake {userStats.stakeInfo.totalAmount} ZRM
-                </Button>
-              )}
+    <>
+      <Modal
+        isOpen={modals.showWarningModal}
+        onClose={() => modals.setShowWarningModal(false)}
+        title="Unclaimed Rewards"
+      >
+        <div className="space-y-4 p-4">
+          <div className="flex items-center gap-3 text-yellow-500">
+            <AlertCircle className="w-5 h-5" />
+            <p className="font-medium">You have unclaimed rewards</p>
+          </div>
+          <p className="text-gray-400">
+            You have {totalPendingRewards} ZRM in unclaimed rewards that are currently locked. 
+            These rewards will be lost if you create a new stake now without claiming them first.
+          </p>
+          {isStakeLocked && userStats?.stakeInfo && (
+            <div className="p-3 bg-gray-800/50 rounded-lg">
+              <UnlockTimer
+                timeRemaining={userStats.stakeInfo.timeRemaining}
+                unlockTime={userStats.stakeInfo.unlockTime}
+                className="justify-center text-yellow-500"
+              />
             </div>
-
-            {isStakeLocked && userStats.stakeInfo && (
-              <div className="mt-4">
-                <UnlockTimer
-                  timeRemaining={userStats.stakeInfo.timeRemaining}
-                  unlockTime={userStats.stakeInfo.unlockTime}
-                  className="justify-center"
-                />
-              </div>
-            )}
-          </Card>
+          )}
+          <div className="flex justify-end gap-4 mt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => modals.setShowWarningModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleClaimAndStake}
+              disabled={isStakeLocked === true} // виправлення тут
+            >
+              Claim Rewards
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={handleForceStake}
+              className="border-yellow-500 hover:bg-yellow-500/10"
+            >
+              Create Stake Anyway
+            </Button>
+         </div>
         </div>
-      ) : (
-        <Card className="mb-8 p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-primary/10 rounded-lg">
-              <Lock className="w-6 h-6 text-primary" />
+      </Modal>
+
+<section className="container mx-auto px-4 pt-24">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Staking</h1>
+          <p className="text-gray-400">
+            Lock your ZORIUM tokens to earn rewards and increase your level
+          </p>
+        </div>
+
+        {hasStakeHistory && (
+          <StakeHistory totalHistoricalStake={userStats?.totalHistoricalStake} />
+        )}
+
+        {hasActiveStake && userStats?.stakeInfo ? (
+          <div className="space-y-6 mb-8">
+            <StakeStats
+              amount={userStats.stakeInfo.totalAmount || '0'}
+              multiplier={userStats.stakeInfo.multiplier}
+              periodDays={Math.floor(userStats.stakeInfo.lockPeriod / 86400)}
+              pendingRewards={userStats.stakeInfo.pendingRewards}
+              levelBonus={userStats.stakeInfo.levelBonus}
+              referralBonus={userStats.stakeInfo.referralBonus}
+              hasReferralBonus={userStats.referrer !== undefined && 
+                            userStats.referrer !== '0x0000000000000000000000000000000000000000'}
+            />
+
+            <Card className="p-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {Number(totalPendingRewards) > 0 && !isStakeLocked && (
+                  <Button onClick={() => actions.claim()} className="flex-1">
+                    Claim {totalPendingRewards} ZRM
+                  </Button>
+                )}
+                {!isStakeLocked && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => actions.unstake()}
+                    className="flex-1"
+                  >
+                    Unstake {userStats.stakeInfo.totalAmount} ZRM
+                  </Button>
+                )}
+              </div>
+
+{isStakeLocked && userStats.stakeInfo && (
+                <div className="mt-4">
+                  <UnlockTimer
+                    timeRemaining={userStats.stakeInfo.timeRemaining}
+                    unlockTime={userStats.stakeInfo.unlockTime}
+                    className="justify-center"
+                  />
+                </div>
+              )}
+            </Card>
+          </div>
+        ) : (
+          <Card className="mb-8 p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <Lock className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-1">No Active Stake</h3>
+                <p className="text-sm text-gray-400">
+                  Start staking to earn rewards and increase your level
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-1">No Active Stake</h3>
-              <p className="text-sm text-gray-400">
-                Start staking to earn rewards and increase your level
-              </p>
+          </Card>
+        )}
+
+        {userStats && (
+          <div className="mb-8">
+            <LevelProgress
+              level={userStats.level}
+              progress={userStats.levelProgress}
+              currentAmount={userStats.totalStaked}
+              nextThreshold={userStats.nextLevelThreshold}
+              bonus={userStats.stakeInfo?.levelBonus ?? 0}
+            />
+          </div>
+        )}
+
+        {Number(amount) >= 100 && (
+          <EstimatedRewards
+            baseAmount={amount}
+            periodMultiplier={STAKING_PERIODS[selectedPeriod].multiplier}
+            levelBonus={userStats?.stakeInfo?.levelBonus ?? 0}
+            hasReferralBonus={userStats?.referrer !== undefined && 
+                           userStats.referrer !== '0x0000000000000000000000000000000000000000'}
+          />
+        )}
+
+<Card className="mb-8">
+          <div className="p-6">
+            <h2 className="text-xl font-semibold mb-6">Create New Stake</h2>
+            
+            <div className="mb-8">
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Amount to Stake
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full bg-background border border-gray-800 rounded-lg px-4 py-3 
+                           focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
+                           transition-colors"
+                  placeholder="Enter amount..."
+                  min="100"
+                />
+                <button
+                  className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 
+                            text-xs font-medium text-primary hover:text-primary-hover
+                            transition-colors"
+                  onClick={() => setAmount('')}
+                >
+                  MAX
+                </button>
+              </div>
+              
+              {Number(amount) > 0 && Number(amount) < 100 && (
+                <div className="flex items-center gap-2 mt-2 text-red-400">
+                  <AlertCircle className="w-4 h-4" />
+                  <p className="text-sm">Minimum stake amount is 100 ZRM</p>
+                </div>
+              )}
             </div>
+
+            <div className="mb-8">
+              <label className="block text-sm font-medium text-gray-400 mb-4">
+                Select Lock Period
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {STAKING_PERIODS.map((period, index) => (
+                  <PeriodCard
+                    key={period.days}
+                    days={period.days}
+                    multiplier={period.multiplier}
+                    selected={selectedPeriod === index}
+                    onClick={() => setSelectedPeriod(index)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <Button 
+              className="w-full"
+              disabled={!amount || Number(amount) < 100 || isStaking}
+              onClick={handleStake}
+            >
+              {isStaking ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Staking...</span>
+                </div>
+              ) : (
+                'Stake ZORIUM'
+              )}
+            </Button>
           </div>
         </Card>
-      )}
-
-      {/* Level Progress */}
-      {userStats && (
-        <div className="mb-8">
-          <LevelProgress
-            level={userStats.level}
-            progress={userStats.levelProgress}
-            currentAmount={userStats.totalStaked}
-            nextThreshold={userStats.nextLevelThreshold}
-            bonus={userStats.stakeInfo?.levelBonus ?? 0}
-          />
-        </div>
-      )}
-
-      {/* Rewards Info */}
-      {Number(amount) >= 100 && (
-        <EstimatedRewards
-          baseAmount={amount}
-          periodMultiplier={STAKING_PERIODS[selectedPeriod].multiplier}
-          levelBonus={userStats?.stakeInfo?.levelBonus ?? 0}
-          hasReferralBonus={userStats?.referrer !== undefined && 
-                          userStats.referrer !== '0x0000000000000000000000000000000000000000'}
-        />
-      )}
-
-      {/* New Stake Form */}
-      <Card className="mb-8">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold mb-6">Create New Stake</h2>
-          
-          {/* Amount Input */}
-          <div className="mb-8">
-            <label className="block text-sm font-medium text-gray-400 mb-2">
-              Amount to Stake
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-background border border-gray-800 rounded-lg px-4 py-3 
-                         focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
-                         transition-colors"
-                placeholder="Enter amount..."
-                min="100"
-              />
-              <button
-                className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 
-                          text-xs font-medium text-primary hover:text-primary-hover
-                          transition-colors"
-                onClick={() => setAmount('')}
-              >
-                MAX
-              </button>
-            </div>
-            
-            {Number(amount) > 0 && Number(amount) < 100 && (
-              <div className="flex items-center gap-2 mt-2 text-red-400">
-                <AlertCircle className="w-4 h-4" />
-                <p className="text-sm">Minimum stake amount is 100 ZRM</p>
-              </div>
-            )}
-          </div>
-
-          {/* Period Selection */}
-          <div className="mb-8">
-            <label className="block text-sm font-medium text-gray-400 mb-4">
-              Select Lock Period
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {STAKING_PERIODS.map((period, index) => (
-                <PeriodCard 
-                  key={period.days}
-                  days={period.days}
-                  multiplier={period.multiplier}
-                  selected={selectedPeriod === index}
-                  onClick={() => setSelectedPeriod(index)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Stake Button */}
-          <Button 
-            className="w-full"
-            disabled={!amount || Number(amount) < 100 || isStaking}
-            onClick={handleStake}
-          >
-            {isStaking ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                <span>Staking...</span>
-              </div>
-            ) : (
-              'Stake ZORIUM'
-            )}
-          </Button>
-        </div>
-      </Card>
-    </section>
+      </section>
+    </>
   );
 }

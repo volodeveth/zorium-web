@@ -83,9 +83,10 @@ const LEVEL_BONUSES = {
   PLATINUM: 50
 } as const;
 
-const REFERRAL_COMMISSIONS = [15, 8, 5] as const; // Percentage for each level
+const REFERRAL_COMMISSIONS = [15, 8, 5] as const;
+
 export function useZorium() {
-  // Base hooks and states
+  // Base hooks
   const { address } = useAccount();
   const { showToast } = useToast();
   const searchParams = useSearchParams();
@@ -95,8 +96,8 @@ export function useZorium() {
   const [referralsData, setReferralsData] = useState<ReferralInfo[]>([]);
   const [referralLevels, setReferralLevels] = useState<ReferralLevelInfo[]>([]);
   const [referrer, setReferrer] = useState<Address | null>(null);
+  const [showWarningModal, setShowWarningModal] = useState(false);
 
-  // Referrer from URL effect
   useEffect(() => {
     const ref = searchParams.get('ref');
     if (ref && isAddress(ref)) {
@@ -104,7 +105,136 @@ export function useZorium() {
     }
   }, [searchParams]);
 
-  // Contract reads
+  // Helper functions
+  const formatValue = (value: bigint | undefined): string => {
+    if (!value) return '0';
+    try {
+      return Number(formatEther(value)).toFixed(2);
+    } catch (error) {
+      console.error('[ZORIUM] Error formatting value:', error);
+      return '0';
+    }
+  };
+
+  const calculateLevel = (amount: number): { 
+    level: string; 
+    progress: number; 
+    next: number 
+  } => {
+    if (amount >= LEVEL_THRESHOLDS.PLATINUM) {
+      return { 
+        level: 'PLATINUM', 
+        progress: 100, 
+        next: LEVEL_THRESHOLDS.PLATINUM 
+      };
+    }
+    if (amount >= LEVEL_THRESHOLDS.GOLD) {
+      const progress = (
+        (amount - LEVEL_THRESHOLDS.GOLD) / 
+        (LEVEL_THRESHOLDS.PLATINUM - LEVEL_THRESHOLDS.GOLD)
+      ) * 100;
+      return { 
+        level: 'GOLD', 
+        progress, 
+        next: LEVEL_THRESHOLDS.PLATINUM 
+      };
+    }
+    if (amount >= LEVEL_THRESHOLDS.SILVER) {
+      const progress = (
+        (amount - LEVEL_THRESHOLDS.SILVER) / 
+        (LEVEL_THRESHOLDS.GOLD - LEVEL_THRESHOLDS.SILVER)
+      ) * 100;
+      return { 
+        level: 'SILVER', 
+        progress, 
+        next: LEVEL_THRESHOLDS.GOLD 
+      };
+    }
+    const progress = (amount / LEVEL_THRESHOLDS.SILVER) * 100;
+    return { 
+      level: 'BRONZE', 
+      progress, 
+      next: LEVEL_THRESHOLDS.SILVER 
+    };
+  };
+
+  const processStakeInfo = (info: any): StakeInfo | null => {
+    if (!info) {
+      console.log('[ZORIUM] No staker info available');
+      return null;
+    }
+
+    try {
+      const amount = info[0] as bigint;
+      const startTime = Number(info[1]);
+      const lockPeriod = Number(info[2]);
+      const multiplier = Number(info[3]);
+      const lastRewardCalculation = Number(info[4]);
+      const totalHistoricalStake = info[10] as bigint;
+      const isActive = info[12] as boolean;
+
+      if (amount <= BigInt(0)) return null;
+
+      const now = Math.floor(Date.now() / 1000);
+      const unlockTime = startTime + lockPeriod;
+      const timeRemaining = unlockTime - now;
+
+      const amountNumber = Number(formatValue(amount));
+      const levelInfo = calculateLevel(amountNumber);
+      const levelBonus = LEVEL_BONUSES[levelInfo.level as keyof typeof LEVEL_BONUSES] || 0;
+
+      const baseAnnualReward = amountNumber * 0.05;
+      const periodMultiplier = multiplier / 100;
+      const withPeriodBonus = baseAnnualReward * periodMultiplier;
+      const withLevelBonus = withPeriodBonus * (1 + levelBonus / 100);
+
+      const yearInDays = 365;
+      const daysSinceLastCalculation = (now - lastRewardCalculation) / (24 * 60 * 60);
+      const proRatedRewards = withLevelBonus * (daysSinceLastCalculation / yearInDays);
+
+      const referralBonus = formatValue(info[9] as bigint);
+
+      return {
+        totalAmount: formatValue(amount),
+        startTime,
+        lockPeriod,
+        multiplier,
+        unlockTime,
+        isLocked: timeRemaining > 0,
+        timeRemaining: timeRemaining > 0 ? timeRemaining : 0,
+        pendingRewards: proRatedRewards.toFixed(2),
+        level: levelInfo.level,
+        levelProgress: levelInfo.progress,
+        levelBonus,
+        isActive: true,
+        referralBonus,
+        totalHistoricalStake: formatValue(totalHistoricalStake)
+      };
+    } catch (error) {
+      console.error('[ZORIUM] Error processing stake info:', error);
+      return null;
+    }
+  };
+
+  const checkCooldown = async (): Promise<boolean> => {
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      const lastAction = Number(lastActionTime || 0);
+      const cooldownTime = 3600;
+
+      if (lastAction + cooldownTime > now) {
+        const waitTime = lastAction + cooldownTime - now;
+        const minutes = Math.ceil(waitTime / 60);
+        showToast(`Please wait ${minutes} minutes before next action`, 'error');
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('[ZORIUM] Cooldown check error:', error);
+      return false;
+    }
+  };
+
   const { data: lastActionTime, error: lastActionError } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
@@ -194,7 +324,7 @@ export function useZorium() {
       console.error('[ZORIUM] Error fetching pending rewards:', error);
     }
   });
-  // Contract writes
+
   const { writeAsync: stake, data: stakeTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
@@ -231,7 +361,54 @@ export function useZorium() {
     }
   });
 
-  // Transaction watchers
+  // Додаємо нову функцію executeStake
+  const executeStake = async (amount: string, periodIndex: number): Promise<boolean> => {
+    try {
+      if (!amount || Number(amount) < 100) {
+        showToast('Minimum stake amount is 100 ZRM', 'error');
+        return false;
+      }
+
+      showToast('Initiating staking transaction...', 'loading');
+      await stake({ 
+        args: [parseEther(amount), BigInt(periodIndex)] 
+      });
+      showToast('Please confirm the transaction', 'info');
+      return true;
+    } catch (error) {
+      console.error('[ZORIUM] Force stake error:', error);
+      showToast(error instanceof Error ? error.message : 'Failed to create stake', 'error');
+      return false;
+    }
+  };
+
+  // Оновлюємо функцію stakeTokens
+  const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean> => {
+    try {
+      if (!(await checkCooldown())) return false;
+
+      const stats = processUserStats();
+      const currentPendingRewards = Number(stats?.stakeInfo?.pendingRewards || '0');
+      const currentReferralRewards = Number(stats?.stakeInfo?.referralBonus || '0');
+      const totalCurrentRewards = currentPendingRewards + currentReferralRewards;
+
+      if (totalCurrentRewards > 0) {
+        showToast(
+          'You have unclaimed rewards. Please claim your rewards before creating a new stake.',
+          'warning'
+        );
+        setShowWarningModal(true);
+        return false;
+      }
+
+      return await executeStake(amount, periodIndex);
+    } catch (error) {
+      console.error('[ZORIUM] Staking error:', error);
+      showToast(error instanceof Error ? error.message : 'Failed to stake tokens', 'error');
+      return false;
+    }
+  };
+
   useWaitForTransaction({
     hash: stakeTx?.hash,
     onSuccess: async () => {
@@ -279,124 +456,12 @@ export function useZorium() {
     },
   });
 
-  // Helper function to refetch all data
   const refetchAll = useCallback(() => {
     refetchTotalStaked();
     refetchStakerInfo();
     refetchRewards();
   }, [refetchTotalStaked, refetchStakerInfo, refetchRewards]);
-  // Helper functions
-  const calculateLevel = (amount: number): { 
-    level: string; 
-    progress: number; 
-    next: number 
-  } => {
-    if (amount >= LEVEL_THRESHOLDS.PLATINUM) {
-      return { 
-        level: 'PLATINUM', 
-        progress: 100, 
-        next: LEVEL_THRESHOLDS.PLATINUM 
-      };
-    }
-    if (amount >= LEVEL_THRESHOLDS.GOLD) {
-      const progress = (
-        (amount - LEVEL_THRESHOLDS.GOLD) / 
-        (LEVEL_THRESHOLDS.PLATINUM - LEVEL_THRESHOLDS.GOLD)
-      ) * 100;
-      return { 
-        level: 'GOLD', 
-        progress, 
-        next: LEVEL_THRESHOLDS.PLATINUM 
-      };
-    }
-    if (amount >= LEVEL_THRESHOLDS.SILVER) {
-      const progress = (
-        (amount - LEVEL_THRESHOLDS.SILVER) / 
-        (LEVEL_THRESHOLDS.GOLD - LEVEL_THRESHOLDS.SILVER)
-      ) * 100;
-      return { 
-        level: 'SILVER', 
-        progress, 
-        next: LEVEL_THRESHOLDS.GOLD 
-      };
-    }
-    const progress = (amount / LEVEL_THRESHOLDS.SILVER) * 100;
-    return { 
-      level: 'BRONZE', 
-      progress, 
-      next: LEVEL_THRESHOLDS.SILVER 
-    };
-  };
 
-  const formatValue = (value: bigint | undefined): string => {
-    if (!value) return '0';
-    try {
-      return Number(formatEther(value)).toFixed(2);
-    } catch (error) {
-      console.error('[ZORIUM] Error formatting value:', error);
-      return '0';
-    }
-  };
-
-  // Function for processing staker info
-  const processStakeInfo = (info: any): StakeInfo | null => {
-    if (!info) {
-      console.log('[ZORIUM] No staker info available');
-      return null;
-    }
-
-    try {
-      const amount = info[0] as bigint;
-      const startTime = Number(info[1]);
-      const lockPeriod = Number(info[2]);
-      const multiplier = Number(info[3]);
-      const lastRewardCalculation = Number(info[4]);
-      const totalHistoricalStake = info[10] as bigint;
-      const isActive = info[12] as boolean;
-
-      if (amount <= BigInt(0)) return null;
-
-      const now = Math.floor(Date.now() / 1000);
-      const unlockTime = startTime + lockPeriod;
-      const timeRemaining = unlockTime - now;
-
-      const amountNumber = Number(formatValue(amount));
-      const levelInfo = calculateLevel(amountNumber);
-      const levelBonus = LEVEL_BONUSES[levelInfo.level as keyof typeof LEVEL_BONUSES] || 0;
-
-      const baseAnnualReward = amountNumber * 0.05;
-      const periodMultiplier = multiplier / 100;
-      const withPeriodBonus = baseAnnualReward * periodMultiplier;
-      const withLevelBonus = withPeriodBonus * (1 + levelBonus / 100);
-
-      const yearInDays = 365;
-      const daysSinceLastCalculation = (now - lastRewardCalculation) / (24 * 60 * 60);
-      const proRatedRewards = withLevelBonus * (daysSinceLastCalculation / yearInDays);
-
-      const referralBonus = formatValue(info[9] as bigint);
-
-      return {
-        totalAmount: formatValue(amount),
-        startTime,
-        lockPeriod,
-        multiplier,
-        unlockTime,
-        isLocked: timeRemaining > 0,
-        timeRemaining: timeRemaining > 0 ? timeRemaining : 0,
-        pendingRewards: proRatedRewards.toFixed(2),
-        level: levelInfo.level,
-        levelProgress: levelInfo.progress,
-        levelBonus,
-        isActive: true,
-        referralBonus,
-        totalHistoricalStake: formatValue(totalHistoricalStake)
-      };
-    } catch (error) {
-      console.error('[ZORIUM] Error processing stake info:', error);
-      return null;
-    }
-  };
-  // Process user stats
   const processUserStats = useCallback((): UserStats | undefined => {
     if (!stakerInfo) {
       console.log('[ZORIUM] No staker info available');
@@ -427,164 +492,6 @@ export function useZorium() {
       return undefined;
     }
   }, [stakerInfo, referralsData, referralLevels]);
-
-  const getReferralInfo = useCallback(async (
-    referralAddress: Address
-  ): Promise<ReferralInfo | null> => {
-    try {
-      const referralStaker = await readContract({
-        address: ZORIUM_CONTRACT_ADDRESS,
-        abi: ZORIUM_ABI,
-        functionName: 'stakers',
-        args: [referralAddress],
-      });
-
-      if (!referralStaker) return null;
-
-      const amount = Number(formatValue(referralStaker[0] as bigint));
-      const levelInfo = calculateLevel(amount);
-      const referralBonus = formatValue(referralStaker[9] as bigint);
-
-      return {
-        address: referralAddress,
-        isActive: referralStaker[12] as boolean,
-        amount: amount.toString(),
-        since: Number(referralStaker[1]),
-        level: levelInfo.level,
-        rewards: {
-          pending: referralBonus,
-          total: formatValue(referralStaker[11] as bigint),
-          lastUpdate: Number(referralStaker[4])
-        }
-      };
-    } catch (error) {
-      console.error('[ZORIUM] Error fetching referral info:', error);
-      return null;
-    }
-  }, []);
-
-  const processReferralLevels = useCallback((
-    referrals: ReferralInfo[]
-  ): ReferralLevelInfo[] => {
-    try {
-      return REFERRAL_COMMISSIONS.map((commission, index) => {
-        const levelReferrals = referrals.filter(
-          ref => ref.level === index.toString()
-        );
-        const activeReferrals = levelReferrals.filter(
-          ref => ref.isActive
-        );
-        
-        return {
-          level: index,
-          count: levelReferrals.length,
-          activeCount: activeReferrals.length,
-          totalEarned: levelReferrals.reduce(
-            (acc, ref) => acc + Number(ref.rewards?.total || 0), 
-            0
-          ).toFixed(2),
-          pendingRewards: levelReferrals.reduce(
-            (acc, ref) => acc + Number(ref.rewards?.pending || 0), 
-            0
-          ).toFixed(2),
-          commission
-        };
-      });
-    } catch (error) {
-      console.error('[ZORIUM] Error processing referral levels:', error);
-      return [];
-    }
-  }, []);
-
-  const calculatePotentialRewards = (amount: string, periodIndex: number) => {
-    const baseAmount = Number(amount);
-    if (!baseAmount) return { 
-      baseReward: '0', 
-      withMultiplier: '0', 
-      withLevelBonus: '0', 
-      apy: 0 
-    };
-
-    try {
-      const baseAnnualReward = baseAmount * 0.05;
-      const periodMultiplier = [1, 1.5, 2, 3][periodIndex] || 1;
-      const withPeriodBonus = baseAnnualReward * periodMultiplier;
-      
-      const stats = processUserStats();
-      const currentLevel = stats?.level || 'BRONZE';
-      const levelBonus = LEVEL_BONUSES[currentLevel as keyof typeof LEVEL_BONUSES] || 0;
-      const withLevelBonus = withPeriodBonus * (1 + levelBonus / 100);
-
-      const periodDays = [30, 90, 180, 365][periodIndex] || 30;
-      const periodFraction = periodDays / 365;
-      const periodReward = withLevelBonus * periodFraction;
-      const apy = (periodReward / baseAmount) * (365 / periodDays) * 100;
-
-      return {
-        baseReward: baseAnnualReward.toFixed(2),
-        withMultiplier: withPeriodBonus.toFixed(2),
-        withLevelBonus: withLevelBonus.toFixed(2),
-        apy: Number(apy.toFixed(2))
-      };
-    } catch (error) {
-      console.error('[ZORIUM] Error calculating potential rewards:', error);
-      return {
-        baseReward: '0',
-        withMultiplier: '0',
-        withLevelBonus: '0',
-        apy: 0
-      };
-    }
-  };
-  // Security and validation functions
-  const checkCooldown = async (): Promise<boolean> => {
-    try {
-      const now = Math.floor(Date.now() / 1000);
-      const lastAction = Number(lastActionTime || 0);
-      const cooldownTime = 3600;
-
-      if (lastAction + cooldownTime > now) {
-        const waitTime = lastAction + cooldownTime - now;
-        const minutes = Math.ceil(waitTime / 60);
-        showToast(`Please wait ${minutes} minutes before next action`, 'error');
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.error('[ZORIUM] Cooldown check error:', error);
-      return false;
-    }
-  };
-
-  // Action functions
-  const stakeTokens = async (
-    amount: string, 
-    periodIndex: number
-  ): Promise<boolean> => {
-    try {
-      if (!(await checkCooldown())) return false;
-
-      showToast('Initiating staking transaction...', 'loading');
-      console.log('[ZORIUM] Staking params:', {
-        amount: parseEther(amount),
-        periodIndex: BigInt(periodIndex)
-      });
-
-      const tx = await stake({ 
-        args: [parseEther(amount), BigInt(periodIndex)] 
-      });
-      
-      showToast('Please confirm the transaction', 'info');
-      return true;
-    } catch (error) {
-      console.error('[ZORIUM] Staking error:', error);
-      showToast(
-        error instanceof Error ? error.message : 'Failed to stake tokens',
-        'error'
-      );
-      return false;
-    }
-  };
 
   const unstakeTokens = async (): Promise<boolean> => {
     try {
@@ -656,7 +563,6 @@ export function useZorium() {
     }
   };
 
-  // Return hook data and functions
   return {
     stats: {
       totalStaked: formatValue(totalStaked as bigint),
@@ -668,6 +574,7 @@ export function useZorium() {
       stake: stakeTokens,
       unstake: unstakeTokens,
       claim: claimRewards,
+      executeStake // Додаємо нову функцію
     },
     referralInfo: {
       currentReferrer: stakerInfo?.[7] as Address,
@@ -679,8 +586,11 @@ export function useZorium() {
     utils: {
       formatValue,
       calculateLevel,
-      checkCooldown,
-      calculatePotentialRewards
+      checkCooldown
     },
+    modals: {
+      showWarningModal,
+      setShowWarningModal
+    }
   };
 }

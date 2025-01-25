@@ -11,6 +11,8 @@ D:.
 │   package-lock.json
 │   package.json
 │   postcss.config.js
+│   robots.txt
+│   sitemap.xml
 │   tailwind.config.ts
 │   tsconfig.json
 │   vercel.json
@@ -43,37 +45,38 @@ D:.
     ├───app
     │   │   error.tsx
     │   │   globals.css
+    │   │   home-client.tsx
+    │   │   layout-client.tsx
     │   │   layout.tsx
     │   │   loading.tsx
-    │   │   metadata.ts
     │   │   not-found.tsx
     │   │   page.tsx
     │   │   providers.tsx
     │   │
     │   ├───dashboard
+    │   │       dashboard-client.tsx
     │   │       loading.tsx
-    │   │       metadata.ts
     │   │       page.tsx
     │   │
     │   ├───faq
+    │   │       faq-client.tsx
     │   │       loading.tsx
-    │   │       metadata.ts
     │   │       page.tsx
     │   │
     │   ├───nft-rewards
     │   │       loading.tsx
-    │   │       metadata.ts
+    │   │       nft-rewards-client.tsx
     │   │       page.tsx
     │   │
     │   ├───referral
     │   │       loading.tsx
-    │   │       metadata.ts
     │   │       page.tsx
+    │   │       referral-client.tsx
     │   │
     │   └───staking
     │           loading.tsx
-    │           metadata.ts
     │           page.tsx
+    │           staking-client.tsx
     │
     ├───components
     │   │   StakeItem.tsx

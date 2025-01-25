@@ -4,7 +4,7 @@ import React, { createContext, useContext, useCallback, useState, useEffect } fr
 import { Loader2, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
-export type ToastType = 'success' | 'error' | 'loading' | 'info';
+export type ToastType = 'success' | 'error' | 'loading' | 'info' | 'warning';
 
 interface Toast {
   id: string;
@@ -34,7 +34,6 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const showToast = useCallback((message: string, type: ToastType) => {
     const id = Math.random().toString(36).slice(2);
     
-    // Видаляємо попередні тости типу 'loading'
     if (type !== 'loading') {
       setToasts(prevToasts => prevToasts.filter(toast => toast.type !== 'loading'));
     }
@@ -90,6 +89,7 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
     error: <XCircle className="w-5 h-5 text-red-500" />,
     loading: <Loader2 className="w-5 h-5 text-primary animate-spin" />,
     info: <AlertCircle className="w-5 h-5 text-blue-500" />,
+    warning: <AlertCircle className="w-5 h-5 text-yellow-500" />
   };
 
   const bgColors = {
@@ -97,6 +97,7 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
     error: 'bg-red-500/10',
     loading: 'bg-primary/10',
     info: 'bg-blue-500/10',
+    warning: 'bg-yellow-500/10'
   };
 
   const borderColors = {
@@ -104,6 +105,7 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
     error: 'border-red-500/20',
     loading: 'border-primary/20',
     info: 'border-blue-500/20',
+    warning: 'border-yellow-500/20'
   };
 
   return (
