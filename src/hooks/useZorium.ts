@@ -90,8 +90,8 @@ export function useZorium() {
   const { address } = useAccount();
   const { showToast } = useToast();
   const searchParams = useSearchParams();
-  
-  // States
+
+// States
   const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
   const [referralsData, setReferralsData] = useState<ReferralInfo[]>([]);
   const [referralLevels, setReferralLevels] = useState<ReferralLevelInfo[]>([]);
@@ -128,7 +128,8 @@ export function useZorium() {
         next: LEVEL_THRESHOLDS.PLATINUM 
       };
     }
-    if (amount >= LEVEL_THRESHOLDS.GOLD) {
+
+if (amount >= LEVEL_THRESHOLDS.GOLD) {
       const progress = (
         (amount - LEVEL_THRESHOLDS.GOLD) / 
         (LEVEL_THRESHOLDS.PLATINUM - LEVEL_THRESHOLDS.GOLD)
@@ -164,7 +165,7 @@ export function useZorium() {
       return null;
     }
 
-    try {
+try {
       const amount = info[0] as bigint;
       const startTime = Number(info[1]);
       const lockPeriod = Number(info[2]);
@@ -194,7 +195,7 @@ export function useZorium() {
 
       const referralBonus = formatValue(info[9] as bigint);
 
-      return {
+return {
         totalAmount: formatValue(amount),
         startTime,
         lockPeriod,
@@ -235,6 +236,7 @@ export function useZorium() {
     }
   };
 
+// Contract reads
   const { data: lastActionTime, error: lastActionError } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
@@ -277,20 +279,7 @@ export function useZorium() {
     }
   });
 
-  const { data: totalBurned, error: totalBurnedError } = useContractRead({
-    address: ZORIUM_CONTRACT_ADDRESS,
-    abi: ZORIUM_ABI,
-    functionName: 'totalBurned',
-    watch: true,
-    onSuccess: (data) => {
-      console.log('[ZORIUM] Total burned:', formatValue(data as bigint));
-    },
-    onError: (error) => {
-      console.error('[ZORIUM] Error fetching total burned:', error);
-    }
-  });
-
-  const { 
+const { 
     data: stakerInfo, 
     refetch: refetchStakerInfo,
     error: stakerInfoError 
@@ -325,6 +314,20 @@ export function useZorium() {
     }
   });
 
+  const { data: totalBurned, error: totalBurnedError } = useContractRead({
+    address: ZORIUM_CONTRACT_ADDRESS,
+    abi: ZORIUM_ABI,
+    functionName: 'totalBurned',
+    watch: true,
+    onSuccess: (data) => {
+      console.log('[ZORIUM] Total burned:', formatValue(data as bigint));
+    },
+    onError: (error) => {
+      console.error('[ZORIUM] Error fetching total burned:', error);
+    }
+  });
+
+// Contract writes
   const { writeAsync: stake, data: stakeTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
@@ -361,54 +364,7 @@ export function useZorium() {
     }
   });
 
-  // Додаємо нову функцію executeStake
-  const executeStake = async (amount: string, periodIndex: number): Promise<boolean> => {
-    try {
-      if (!amount || Number(amount) < 100) {
-        showToast('Minimum stake amount is 100 ZRM', 'error');
-        return false;
-      }
-
-      showToast('Initiating staking transaction...', 'loading');
-      await stake({ 
-        args: [parseEther(amount), BigInt(periodIndex)] 
-      });
-      showToast('Please confirm the transaction', 'info');
-      return true;
-    } catch (error) {
-      console.error('[ZORIUM] Force stake error:', error);
-      showToast(error instanceof Error ? error.message : 'Failed to create stake', 'error');
-      return false;
-    }
-  };
-
-  // Оновлюємо функцію stakeTokens
-  const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean> => {
-    try {
-      if (!(await checkCooldown())) return false;
-
-      const stats = processUserStats();
-      const currentPendingRewards = Number(stats?.stakeInfo?.pendingRewards || '0');
-      const currentReferralRewards = Number(stats?.stakeInfo?.referralBonus || '0');
-      const totalCurrentRewards = currentPendingRewards + currentReferralRewards;
-
-      if (totalCurrentRewards > 0) {
-        showToast(
-          'You have unclaimed rewards. Please claim your rewards before creating a new stake.',
-          'warning'
-        );
-        setShowWarningModal(true);
-        return false;
-      }
-
-      return await executeStake(amount, periodIndex);
-    } catch (error) {
-      console.error('[ZORIUM] Staking error:', error);
-      showToast(error instanceof Error ? error.message : 'Failed to stake tokens', 'error');
-      return false;
-    }
-  };
-
+// Transaction watchers
   useWaitForTransaction({
     hash: stakeTx?.hash,
     onSuccess: async () => {
@@ -456,7 +412,7 @@ export function useZorium() {
     },
   });
 
-  const refetchAll = useCallback(() => {
+const refetchAll = useCallback(() => {
     refetchTotalStaked();
     refetchStakerInfo();
     refetchRewards();
@@ -493,7 +449,47 @@ export function useZorium() {
     }
   }, [stakerInfo, referralsData, referralLevels]);
 
-  const unstakeTokens = async (): Promise<boolean> => {
+const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean> => {
+    try {
+      if (!(await checkCooldown())) return false;
+
+      const stats = processUserStats();
+      const currentPendingRewards = Number(stats?.stakeInfo?.pendingRewards || '0');
+      const currentReferralRewards = Number(stats?.stakeInfo?.referralBonus || '0');
+      const totalCurrentRewards = currentPendingRewards + currentReferralRewards;
+
+      if (totalCurrentRewards > 0) {
+        showToast(
+          'You have unclaimed rewards. Please claim your rewards before creating a new stake.',
+          'warning'
+        );
+        setShowWarningModal(true);
+        return false;
+      }
+
+      showToast('Initiating staking transaction...', 'loading');
+      console.log('[ZORIUM] Staking params:', {
+        amount: parseEther(amount),
+        periodIndex: BigInt(periodIndex)
+      });
+
+      const tx = await stake({ 
+        args: [parseEther(amount), BigInt(periodIndex)] 
+      });
+      
+      showToast('Please confirm the transaction', 'info');
+      return true;
+    } catch (error) {
+      console.error('[ZORIUM] Staking error:', error);
+      showToast(
+        error instanceof Error ? error.message : 'Failed to stake tokens',
+        'error'
+      );
+      return false;
+    }
+  };
+
+const unstakeTokens = async (): Promise<boolean> => {
     try {
       if (!(await checkCooldown())) return false;
 
@@ -534,7 +530,7 @@ export function useZorium() {
         return false;
       }
 
-      if (stats.stakeInfo.isLocked) {
+if (stats.stakeInfo.isLocked) {
         const days = Math.ceil(stats.stakeInfo.timeRemaining / 86400);
         showToast(`Stake is locked for ${days} more days`, 'error');
         return false;
@@ -574,8 +570,8 @@ export function useZorium() {
       stake: stakeTokens,
       unstake: unstakeTokens,
       claim: claimRewards,
-      executeStake // Додаємо нову функцію
     },
+    stake, // Додаємо пряме посилання на функцію stake
     referralInfo: {
       currentReferrer: stakerInfo?.[7] as Address,
       referrals: referralsData,

@@ -73,10 +73,15 @@ D:.
     │   │       page.tsx
     │   │       referral-client.tsx
     │   │
-    │   └───staking
+    │   ├───staking
+    │   │       loading.tsx
+    │   │       page.tsx
+    │   │       staking-client.tsx
+    │   │
+    │   └───tokenomics
     │           loading.tsx
     │           page.tsx
-    │           staking-client.tsx
+    │           tokenomics-client.tsx
     │
     ├───components
     │   │   StakeItem.tsx

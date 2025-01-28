@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { UnlockTimer } from '@/components/ui/unlock-timer';
 import { StakeStats } from '@/components/ui/stake-stats';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/hooks/useToast';
+import { parseEther } from 'viem';
 
 const STAKING_PERIODS = [
   { days: 30, multiplier: 100 },
@@ -33,6 +34,30 @@ interface EstimatedRewardsProps {
   hasReferralBonus?: boolean;
 }
 
+const PeriodCard = ({ days, multiplier, selected, onClick }: PeriodCardProps) => (
+  <Card
+    className={`cursor-pointer transition-all duration-300 ${
+      selected
+        ? 'border-primary ring-1 ring-primary/50 shadow-lg shadow-primary/10'
+        : 'hover:border-primary/30'
+    }`}
+    onClick={onClick}
+  >
+    <div className="p-4">
+      <div className="flex justify-between items-start mb-4">
+        <div className="p-2 bg-primary/10 rounded-lg">
+          <Clock className="w-5 h-5 text-primary" />
+        </div>
+        <span className="text-xs font-medium px-2 py-1 bg-primary/10 rounded-full text-primary">
+          {multiplier / 100}x Rewards
+        </span>
+      </div>
+      <p className="text-2xl font-bold mb-1">{days} Days</p>
+      <p className="text-sm text-gray-400">Lock Period</p>
+    </div>
+  </Card>
+);
+
 const StakeHistory = ({ totalHistoricalStake }: { totalHistoricalStake?: string }) => {
   if (!totalHistoricalStake || Number(totalHistoricalStake) === 0) return null;
 
@@ -51,42 +76,18 @@ const StakeHistory = ({ totalHistoricalStake }: { totalHistoricalStake?: string 
   );
 };
 
-const PeriodCard = ({ days, multiplier, selected, onClick }: PeriodCardProps) => (
-  <Card 
-    className={`cursor-pointer transition-all duration-300 ${
-      selected 
-        ? 'border-primary ring-1 ring-primary/50 shadow-lg shadow-primary/10' 
-        : 'hover:border-primary/30'
-    }`}
-    onClick={onClick}
-  >
-    <div className="p-4">
-      <div className="flex justify-between items-start mb-4">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <Clock className="w-5 h-5 text-primary" />
-        </div>
-        <span className="text-xs font-medium px-2 py-1 bg-primary/10 rounded-full text-primary">
-          {multiplier/100}x Rewards
-        </span>
-      </div>
-      <p className="text-2xl font-bold mb-1">{days} Days</p>
-      <p className="text-sm text-gray-400">Lock Period</p>
-    </div>
-  </Card>
-);
-
-const EstimatedRewards = ({ 
-  baseAmount, 
-  periodMultiplier, 
+const EstimatedRewards = ({
+  baseAmount,
+  periodMultiplier,
   levelBonus,
-  hasReferralBonus 
+  hasReferralBonus,
 }: EstimatedRewardsProps) => {
   const baseRewards = Number(baseAmount) * 0.05;
   const withPeriodBonus = baseRewards * (periodMultiplier / 100);
   const withLevelBonus = withPeriodBonus * (1 + levelBonus / 100);
-  const withReferralBonus = hasReferralBonus ? 
-    withLevelBonus * 1.1 : 
-    withLevelBonus;
+  const withReferralBonus = hasReferralBonus
+    ? withLevelBonus * 1.1
+    : withLevelBonus;
 
   const referralBonusAmount = withReferralBonus - withLevelBonus;
   const effectiveAPY = (withReferralBonus / Number(baseAmount)) * 100;
@@ -106,13 +107,15 @@ const EstimatedRewards = ({
           <div>
             <p className="text-gray-400">Period Bonus</p>
             <p className="font-medium">
-              +{periodMultiplier - 100}% ({(withPeriodBonus - baseRewards).toFixed(2)} ZRM)
+              +{periodMultiplier - 100}% (
+              {(withPeriodBonus - baseRewards).toFixed(2)} ZRM)
             </p>
           </div>
           <div>
             <p className="text-gray-400">Level Bonus</p>
             <p className="font-medium">
-              +{levelBonus}% ({(withLevelBonus - withPeriodBonus).toFixed(2)} ZRM)
+              +{levelBonus}% (
+              {(withLevelBonus - withPeriodBonus).toFixed(2)} ZRM)
             </p>
           </div>
           <div>
@@ -130,11 +133,15 @@ const EstimatedRewards = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex justify-between items-center">
               <p className="text-gray-400">Total Estimated Annual Rewards</p>
-              <p className="text-xl font-bold text-primary">{withReferralBonus.toFixed(2)} ZRM</p>
+              <p className="text-xl font-bold text-primary">
+                {withReferralBonus.toFixed(2)} ZRM
+              </p>
             </div>
             <div className="flex justify-between items-center">
               <p className="text-gray-400">Effective APY</p>
-              <p className="text-xl font-bold text-green-500">{effectiveAPY.toFixed(2)}%</p>
+              <p className="text-xl font-bold text-green-500">
+                {effectiveAPY.toFixed(2)}%
+              </p>
             </div>
           </div>
         </div>
@@ -145,9 +152,11 @@ const EstimatedRewards = ({
 
 export default function StakingClient() {
   const { address } = useAccount();
-  const { userStats, actions, modals } = useZorium();
-  const { showToast } = useToast(); // Додаємо useToast
+  const { userStats, actions, modals, stake } = useZorium();
+  const { showToast } = useToast();
+  
   const [amount, setAmount] = React.useState('');
+  const [modalAmount, setModalAmount] = React.useState('');
   const [selectedPeriod, setSelectedPeriod] = React.useState<number>(0);
   const [isStaking, setIsStaking] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
@@ -156,56 +165,103 @@ export default function StakingClient() {
     setMounted(true);
   }, []);
 
+  // Додаємо ефект для відстеження modalAmount
+  React.useEffect(() => {
+    console.log('[DEBUG] Modal amount updated:', modalAmount);
+  }, [modalAmount]);
+
   const handleStake = async () => {
-    if (!amount || Number(amount) < 100 || isStaking) return;
+    const stakeAmount = amount.trim();
+    console.log('[DEBUG] Stake amount:', stakeAmount);
+
+    if (!stakeAmount || Number(stakeAmount) < 100 || isStaking) {
+      console.log('[DEBUG] Invalid stake amount or currently staking');
+      showToast('Minimum stake amount is 100 ZRM', 'error');
+      return;
+    }
+
+    setModalAmount(stakeAmount); // Встановлюємо modalAmount перед стейкінгом
+    
     setIsStaking(true);
     try {
-      await actions.stake(amount, selectedPeriod);
+      console.log('[DEBUG] Initiating stake with amount:', stakeAmount);
+      await actions.stake(stakeAmount, selectedPeriod);
+      console.log('[DEBUG] Stake successful');
       setAmount('');
+      // НЕ очищаємо modalAmount тут
+    } catch (error) {
+      console.error('[DEBUG] Stake error:', error);
+      showToast(error instanceof Error ? error.message : 'Failed to stake', 'error');
+      setModalAmount(''); // Очищаємо тільки при помилці
     } finally {
       setIsStaking(false);
     }
   };
 
   const handleClaimAndStake = async () => {
-    await actions.claim();
-    modals.setShowWarningModal(false);
+    console.log('[DEBUG] Claiming rewards and preparing to stake...');
+    try {
+      await actions.claim();
+      modals.setShowWarningModal(false);
+    } catch (error) {
+      console.error('[DEBUG] Claim error:', error);
+      showToast(error instanceof Error ? error.message : 'Failed to claim rewards', 'error');
+    } finally {
+      setModalAmount(''); // Очищаємо modalAmount після завершення
+    }
   };
 
   const handleForceStake = async () => {
-    const stakeAmount = amount.trim();
-  
+    const stakeAmount = modalAmount;
+    console.log('[DEBUG] Force stake amount:', stakeAmount);
+
     if (!stakeAmount || Number(stakeAmount) < 100) {
+      console.log('[DEBUG] Error: Minimum stake amount not met');
       showToast('Minimum stake amount is 100 ZRM', 'error');
       return;
     }
-  
-    if (isStaking) return;
-  
+
     setIsStaking(true);
     try {
-      const success = await actions.executeStake(stakeAmount, selectedPeriod);
-      if (success) {
-        setAmount('');
-        modals.setShowWarningModal(false);
-      }
+      console.log('[DEBUG] Executing force stake...');
+      await stake({
+        args: [parseEther(stakeAmount), BigInt(selectedPeriod)]
+      });
+      console.log('[DEBUG] Force stake successful');
+      setAmount('');
+      modals.setShowWarningModal(false);
     } catch (error) {
-      console.error('Force stake error:', error);
+      console.error('[DEBUG] Force stake error:', error);
       showToast(error instanceof Error ? error.message : 'Failed to stake', 'error');
     } finally {
       setIsStaking(false);
+      setModalAmount(''); // Очищаємо modalAmount після завершення
     }
   };
 
-  const totalPendingRewards = userStats?.stakeInfo
-    ? (Number(userStats.stakeInfo.pendingRewards) + Number(userStats.stakeInfo.referralBonus)).toFixed(2)
+const totalPendingRewards = userStats?.stakeInfo
+    ? (
+        Number(userStats.stakeInfo.pendingRewards) +
+        Number(userStats.stakeInfo.referralBonus)
+      ).toFixed(2)
     : '0';
 
-  const hasStakeHistory = userStats?.totalHistoricalStake && Number(userStats.totalHistoricalStake) > 0;
-  const hasActiveStake = userStats?.stakeInfo && Number(userStats.stakeInfo.totalAmount) > 0;
+  const hasStakeHistory =
+    userStats?.totalHistoricalStake &&
+    Number(userStats.totalHistoricalStake) > 0;
+  const hasActiveStake =
+    userStats?.stakeInfo && Number(userStats.stakeInfo.totalAmount) > 0;
   const isStakeLocked = hasActiveStake && userStats?.stakeInfo?.isLocked;
 
-if (!mounted) return null;
+  // Додаємо розширене логування
+  console.log('Component render state:');
+  console.log('Amount:', amount);
+  console.log('Modal amount:', modalAmount);
+  console.log('Selected period:', selectedPeriod);
+  console.log('User stats:', userStats);
+  console.log('Total pending rewards:', totalPendingRewards);
+
+  if (!mounted) return null;
 
   if (!address) {
     return (
@@ -213,28 +269,34 @@ if (!mounted) return null;
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <h1 className="text-2xl font-bold mb-4">Connect your wallet to continue</h1>
           <p className="text-gray-400 text-center mb-8">
-            You need to connect your wallet to access staking features
+            You need to connect your wallet to access staking features.
           </p>
         </div>
       </section>
     );
   }
 
-  return (
+return (
     <>
+      {console.log('Rendering modal with amount:', modalAmount)}
+
       <Modal
         isOpen={modals.showWarningModal}
-        onClose={() => modals.setShowWarningModal(false)}
+        onClose={() => {
+          modals.setShowWarningModal(false);
+          setModalAmount(''); // Очищаємо при закритті
+        }}
         title="Unclaimed Rewards"
       >
         <div className="space-y-4 p-4">
           <div className="flex items-center gap-3 text-yellow-500">
             <AlertCircle className="w-5 h-5" />
-            <p className="font-medium">You have unclaimed rewards</p>
+            <p className="font-medium">Warning</p>
           </div>
           <p className="text-gray-400">
-            You have {totalPendingRewards} ZRM in unclaimed rewards that are currently locked. 
-            These rewards will be lost if you create a new stake now without claiming them first.
+            You are attempting to stake <strong>{Number(modalAmount).toLocaleString()}</strong> ZRM 
+            while having {totalPendingRewards} ZRM in unclaimed rewards. 
+            These rewards will be lost if you create a new stake now.
           </p>
           {isStakeLocked && userStats?.stakeInfo && (
             <div className="p-3 bg-gray-800/50 rounded-lg">
@@ -248,13 +310,16 @@ if (!mounted) return null;
           <div className="flex justify-end gap-4 mt-6">
             <Button 
               variant="outline" 
-              onClick={() => modals.setShowWarningModal(false)}
+              onClick={() => {
+                modals.setShowWarningModal(false);
+                setModalAmount('');
+              }}
             >
               Cancel
             </Button>
             <Button 
               onClick={handleClaimAndStake}
-              disabled={isStakeLocked === true} // виправлення тут
+              disabled={isStakeLocked === true}
             >
               Claim Rewards
             </Button>
@@ -263,9 +328,9 @@ if (!mounted) return null;
               onClick={handleForceStake}
               className="border-yellow-500 hover:bg-yellow-500/10"
             >
-              Create Stake Anyway
+              Stake {Number(modalAmount).toLocaleString()} ZRM Anyway
             </Button>
-         </div>
+          </div>
         </div>
       </Modal>
 
@@ -273,7 +338,7 @@ if (!mounted) return null;
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Staking</h1>
           <p className="text-gray-400">
-            Lock your ZORIUM tokens to earn rewards and increase your level
+            Lock your ZORIUM tokens to earn rewards and increase your level.
           </p>
         </div>
 
@@ -290,8 +355,10 @@ if (!mounted) return null;
               pendingRewards={userStats.stakeInfo.pendingRewards}
               levelBonus={userStats.stakeInfo.levelBonus}
               referralBonus={userStats.stakeInfo.referralBonus}
-              hasReferralBonus={userStats.referrer !== undefined && 
-                            userStats.referrer !== '0x0000000000000000000000000000000000000000'}
+              hasReferralBonus={
+                userStats.referrer !== undefined &&
+                userStats.referrer !== '0x0000000000000000000000000000000000000000'
+              }
             />
 
             <Card className="p-6">
@@ -302,8 +369,8 @@ if (!mounted) return null;
                   </Button>
                 )}
                 {!isStakeLocked && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => actions.unstake()}
                     className="flex-1"
                   >
@@ -312,7 +379,7 @@ if (!mounted) return null;
                 )}
               </div>
 
-{isStakeLocked && userStats.stakeInfo && (
+              {isStakeLocked && userStats.stakeInfo && (
                 <div className="mt-4">
                   <UnlockTimer
                     timeRemaining={userStats.stakeInfo.timeRemaining}
@@ -332,14 +399,14 @@ if (!mounted) return null;
               <div>
                 <h3 className="text-lg font-semibold mb-1">No Active Stake</h3>
                 <p className="text-sm text-gray-400">
-                  Start staking to earn rewards and increase your level
+                  Start staking to earn rewards and increase your level.
                 </p>
               </div>
             </div>
           </Card>
         )}
 
-        {userStats && (
+{userStats && (
           <div className="mb-8">
             <LevelProgress
               level={userStats.level}
@@ -356,15 +423,17 @@ if (!mounted) return null;
             baseAmount={amount}
             periodMultiplier={STAKING_PERIODS[selectedPeriod].multiplier}
             levelBonus={userStats?.stakeInfo?.levelBonus ?? 0}
-            hasReferralBonus={userStats?.referrer !== undefined && 
-                           userStats.referrer !== '0x0000000000000000000000000000000000000000'}
+            hasReferralBonus={
+              userStats?.referrer !== undefined &&
+              userStats.referrer !== '0x0000000000000000000000000000000000000000'
+            }
           />
         )}
 
-<Card className="mb-8">
+        <Card className="mb-8">
           <div className="p-6">
             <h2 className="text-xl font-semibold mb-6">Create New Stake</h2>
-            
+
             <div className="mb-8">
               <label className="block text-sm font-medium text-gray-400 mb-2">
                 Amount to Stake
@@ -373,23 +442,36 @@ if (!mounted) return null;
                 <input
                   type="number"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    console.log('[DEBUG] Input changed:', inputValue);
+
+                    if (Number(inputValue) >= 0) {
+                      setAmount(inputValue);
+                    } else {
+                      console.warn('[DEBUG] Invalid input for amount:', inputValue);
+                    }
+                  }}
                   className="w-full bg-background border border-gray-800 rounded-lg px-4 py-3 
                            focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
                            transition-colors"
                   placeholder="Enter amount..."
-                  min="100"
+                  min="0"
                 />
                 <button
                   className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 
                             text-xs font-medium text-primary hover:text-primary-hover
                             transition-colors"
-                  onClick={() => setAmount('')}
+                  onClick={() => {
+                    console.log('[DEBUG] MAX button clicked, resetting amount');
+                    setAmount('');
+                    setModalAmount('');
+                  }}
                 >
                   MAX
                 </button>
               </div>
-              
+
               {Number(amount) > 0 && Number(amount) < 100 && (
                 <div className="flex items-center gap-2 mt-2 text-red-400">
                   <AlertCircle className="w-4 h-4" />
@@ -409,13 +491,16 @@ if (!mounted) return null;
                     days={period.days}
                     multiplier={period.multiplier}
                     selected={selectedPeriod === index}
-                    onClick={() => setSelectedPeriod(index)}
+                    onClick={() => {
+                      console.log('[DEBUG] Selected lock period:', period.days);
+                      setSelectedPeriod(index);
+                    }}
                   />
                 ))}
               </div>
             </div>
 
-            <Button 
+            <Button
               className="w-full"
               disabled={!amount || Number(amount) < 100 || isStaking}
               onClick={handleStake}
