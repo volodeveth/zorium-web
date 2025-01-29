@@ -1,34 +1,67 @@
+// src/hooks/useReferralHandler.ts
+
 import { useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocalStorage } from './useLocalStorage';
+import { Address } from 'viem';
+
+interface ReferralData {
+  referrer: string;
+  timestamp: number;
+}
 
 export function useReferralHandler() {
   const searchParams = useSearchParams();
-  // Додаємо типізацію для referrer
-  const [referrer, setReferrer] = useLocalStorage<string>('referrer', '');
-
+  const router = useRouter();
+  const [referralData, setReferralData] = useLocalStorage<ReferralData | null>('zorium_referral', null);
+  
   useEffect(() => {
     try {
       const ref = searchParams?.get('ref');
-      // Додаємо додаткову валідацію referrer
-      if (ref && !referrer && ref.length > 0) {
-        // Перевіряємо, чи ref є валідною Ethereum адресою
-        if (ref.startsWith('0x') && ref.length === 42) {
-          setReferrer(ref);
-        }
+      const now = Date.now();
+      const REFERRAL_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+
+      // Перевірка і очищення застарілих реферальних даних
+      if (referralData && (now - referralData.timestamp > REFERRAL_EXPIRY)) {
+        setReferralData(null);
+        return;
+      }
+
+      // Зберігаємо нового реферера, якщо він є і валідний
+      if (ref && !referralData && ref.length === 42 && ref.startsWith('0x')) {
+        setReferralData({
+          referrer: ref as Address,
+          timestamp: now
+        });
+
+        // Опціонально: видаляємо параметр з URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('ref');
+        window.history.replaceState({}, '', url.toString());
       }
     } catch (error) {
-      console.error('Error in referral handler:', error);
+      console.error('[ZORIUM] Error in referral handler:', error);
     }
-  }, [searchParams, referrer, setReferrer]);
+  }, [searchParams, referralData, setReferralData]);
 
-  const clearReferrer = () => {
-    setReferrer('');
+  // Розраховуємо час, що залишився
+  const getTimeRemaining = () => {
+    if (!referralData) return 0;
+    const REFERRAL_EXPIRY = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const timeLeft = (referralData.timestamp + REFERRAL_EXPIRY) - now;
+    return Math.max(0, timeLeft);
   };
 
-  return { 
-    referrer,
-    clearReferrer, // Додаємо функцію для очищення referrer за потреби
-    setReferrer   // Експортуємо setReferrer для можливості прямого встановлення
+  const clearReferral = () => {
+    setReferralData(null);
+  };
+
+  return {
+    referrer: referralData?.referrer || null,
+    timeRemaining: getTimeRemaining(),
+    hasActiveReferral: Boolean(referralData?.referrer),
+    expiryTimestamp: referralData ? referralData.timestamp + (24 * 60 * 60 * 1000) : null,
+    clearReferral
   };
 }

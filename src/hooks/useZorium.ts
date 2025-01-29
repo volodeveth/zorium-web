@@ -91,7 +91,7 @@ export function useZorium() {
   const { showToast } = useToast();
   const searchParams = useSearchParams();
 
-// States
+  // States
   const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
   const [referralsData, setReferralsData] = useState<ReferralInfo[]>([]);
   const [referralLevels, setReferralLevels] = useState<ReferralLevelInfo[]>([]);
@@ -129,7 +129,7 @@ export function useZorium() {
       };
     }
 
-if (amount >= LEVEL_THRESHOLDS.GOLD) {
+    if (amount >= LEVEL_THRESHOLDS.GOLD) {
       const progress = (
         (amount - LEVEL_THRESHOLDS.GOLD) / 
         (LEVEL_THRESHOLDS.PLATINUM - LEVEL_THRESHOLDS.GOLD)
@@ -165,7 +165,7 @@ if (amount >= LEVEL_THRESHOLDS.GOLD) {
       return null;
     }
 
-try {
+    try {
       const amount = info[0] as bigint;
       const startTime = Number(info[1]);
       const lockPeriod = Number(info[2]);
@@ -236,7 +236,7 @@ return {
     }
   };
 
-// Contract reads
+  // Contract reads
   const { data: lastActionTime, error: lastActionError } = useContractRead({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
@@ -279,7 +279,7 @@ return {
     }
   });
 
-const { 
+  const { 
     data: stakerInfo, 
     refetch: refetchStakerInfo,
     error: stakerInfoError 
@@ -327,7 +327,38 @@ const {
     }
   });
 
-// Contract writes
+  const processUserStats = useCallback((): UserStats | undefined => {
+    if (!stakerInfo) {
+      console.log('[ZORIUM] No staker info available');
+      return undefined;
+    }
+
+    try {
+      const amount = Number(formatValue(stakerInfo[0] as bigint));
+      const totalHistoricalStake = formatValue(stakerInfo[10] as bigint);
+      const levelInfo = calculateLevel(amount);
+      const stakeInfo = processStakeInfo(stakerInfo);
+
+      return {
+        totalStaked: amount.toString(),
+        level: levelInfo.level,
+        levelProgress: levelInfo.progress,
+        nextLevelThreshold: levelInfo.next.toLocaleString(),
+        isActive: stakerInfo[12] as boolean,
+        referrer: stakerInfo[7] as Address,
+        referralCount: Number(stakerInfo[8]),
+        referrals: referralsData,
+        stakeInfo,
+        referralLevels,
+        totalHistoricalStake
+      };
+    } catch (error) {
+      console.error('[ZORIUM] Error processing user stats:', error);
+      return undefined;
+    }
+  }, [stakerInfo, referralsData, referralLevels]);
+
+  // Contract writes
   const { writeAsync: stake, data: stakeTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
@@ -355,6 +386,7 @@ const {
     }
   });
 
+// Додаємо контрактний виклик для реєстрації реферера
   const { writeAsync: registerReferrer, data: referrerTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
@@ -364,16 +396,14 @@ const {
     }
   });
 
-// Transaction watchers
+  // Transaction watchers
   useWaitForTransaction({
     hash: stakeTx?.hash,
     onSuccess: async () => {
       showToast('Successfully staked tokens!', 'success');
       if (referrer && !stakerInfo?.[7]) {
         try {
-          await registerReferrer({ 
-            args: [referrer]
-          });
+          await registerReferrer({ args: [referrer] });
           showToast('Referral registered successfully', 'success');
         } catch (error) {
           console.error('[ZORIUM] Referral registration error:', error);
@@ -412,42 +442,36 @@ const {
     },
   });
 
-const refetchAll = useCallback(() => {
+  useWaitForTransaction({
+    hash: referrerTx?.hash,
+    onSuccess: () => {
+      showToast('Successfully registered referrer!', 'success');
+      refetchAll();
+    },
+    onError: (error) => {
+      console.error('[ZORIUM] Referrer registration transaction error:', error);
+      showToast(`Failed to register referrer: ${error.message}`, 'error');
+    },
+  });
+
+  const refetchAll = useCallback(() => {
     refetchTotalStaked();
     refetchStakerInfo();
     refetchRewards();
   }, [refetchTotalStaked, refetchStakerInfo, refetchRewards]);
 
-  const processUserStats = useCallback((): UserStats | undefined => {
-    if (!stakerInfo) {
-      console.log('[ZORIUM] No staker info available');
-      return undefined;
-    }
-
+  // Функція для реєстрації реферера
+  const registerNewReferrer = async (referrerAddress: string): Promise<boolean> => {
     try {
-      const amount = Number(formatValue(stakerInfo[0] as bigint));
-      const totalHistoricalStake = formatValue(stakerInfo[10] as bigint);
-      const levelInfo = calculateLevel(amount);
-      const stakeInfo = processStakeInfo(stakerInfo);
-
-      return {
-        totalStaked: amount.toString(),
-        level: levelInfo.level,
-        levelProgress: levelInfo.progress,
-        nextLevelThreshold: levelInfo.next.toLocaleString(),
-        isActive: stakerInfo[12] as boolean,
-        referrer: stakerInfo[7] as Address,
-        referralCount: Number(stakerInfo[8]),
-        referrals: referralsData,
-        stakeInfo,
-        referralLevels,
-        totalHistoricalStake
-      };
+      console.log('[ZORIUM] Registering referrer:', referrerAddress);
+      await registerReferrer({ args: [referrerAddress as `0x${string}`] });
+      refetchAll();
+      return true;
     } catch (error) {
-      console.error('[ZORIUM] Error processing user stats:', error);
-      return undefined;
+      console.error('[ZORIUM] Register referrer error:', error);
+      throw error;
     }
-  }, [stakerInfo, referralsData, referralLevels]);
+  };
 
 const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean> => {
     try {
@@ -473,10 +497,7 @@ const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean
         periodIndex: BigInt(periodIndex)
       });
 
-      const tx = await stake({ 
-        args: [parseEther(amount), BigInt(periodIndex)] 
-      });
-      
+      await stake({ args: [parseEther(amount), BigInt(periodIndex)] });
       showToast('Please confirm the transaction', 'info');
       return true;
     } catch (error) {
@@ -489,7 +510,7 @@ const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean
     }
   };
 
-const unstakeTokens = async (): Promise<boolean> => {
+  const unstakeTokens = async (): Promise<boolean> => {
     try {
       if (!(await checkCooldown())) return false;
 
@@ -508,7 +529,6 @@ const unstakeTokens = async (): Promise<boolean> => {
       showToast('Initiating unstaking transaction...', 'loading');
       await unstake();
       showToast('Please confirm the transaction', 'info');
-      
       return true;
     } catch (error) {
       console.error('[ZORIUM] Unstaking error:', error);
@@ -530,14 +550,8 @@ const unstakeTokens = async (): Promise<boolean> => {
         return false;
       }
 
-if (stats.stakeInfo.isLocked) {
-        const days = Math.ceil(stats.stakeInfo.timeRemaining / 86400);
-        showToast(`Stake is locked for ${days} more days`, 'error');
-        return false;
-      }
-
       const totalRewards = Number(stats.stakeInfo.pendingRewards) + 
-                        Number(stats.stakeInfo.referralBonus);
+                          Number(stats.stakeInfo.referralBonus);
       
       if (totalRewards === 0) {
         showToast('No rewards to claim', 'error');
@@ -547,7 +561,6 @@ if (stats.stakeInfo.isLocked) {
       showToast('Claiming rewards...', 'loading');
       await claimReward();
       showToast('Please confirm the claim transaction', 'info');
-      
       return true;
     } catch (error) {
       console.error('[ZORIUM] Claim error:', error);
@@ -570,8 +583,9 @@ if (stats.stakeInfo.isLocked) {
       stake: stakeTokens,
       unstake: unstakeTokens,
       claim: claimRewards,
+      registerReferrer: registerNewReferrer,
     },
-    stake, // Додаємо пряме посилання на функцію stake
+    stake,
     referralInfo: {
       currentReferrer: stakerInfo?.[7] as Address,
       referrals: referralsData,

@@ -12,6 +12,9 @@ import { StakeStats } from '@/components/ui/stake-stats';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/hooks/useToast';
 import { parseEther } from 'viem';
+import { useReferralHandler } from '@/hooks/useReferralHandler';
+import { ReferralBanner } from '@/components/ui/referral-banner';
+import { ReferralBenefits } from '@/components/ui/referral-benefits';
 
 const STAKING_PERIODS = [
   { days: 30, multiplier: 100 },
@@ -32,6 +35,14 @@ interface EstimatedRewardsProps {
   periodMultiplier: number;
   levelBonus: number;
   hasReferralBonus?: boolean;
+}
+
+// Додаємо інтерфейс для дій Zorium
+interface ZoriumActions {
+  stake: (amount: string, periodIndex: number) => Promise<boolean>;
+  unstake: () => Promise<boolean>;
+  claim: () => Promise<boolean>;
+  registerReferrer: (referrer: string) => Promise<boolean>;
 }
 
 const PeriodCard = ({ days, multiplier, selected, onClick }: PeriodCardProps) => (
@@ -152,23 +163,33 @@ const EstimatedRewards = ({
 
 export default function StakingClient() {
   const { address } = useAccount();
-  const { userStats, actions, modals, stake } = useZorium();
+  const { userStats, actions, modals, stake } = useZorium() as {
+    userStats: any;
+    actions: ZoriumActions;
+    modals: any;
+    stake: any;
+  };
   const { showToast } = useToast();
+  const { referrer, timeRemaining, hasActiveReferral, clearReferral } = useReferralHandler();
   
   const [amount, setAmount] = React.useState('');
   const [modalAmount, setModalAmount] = React.useState('');
   const [selectedPeriod, setSelectedPeriod] = React.useState<number>(0);
   const [isStaking, setIsStaking] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
+  const [showReferralBanner, setShowReferralBanner] = React.useState(true);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Додаємо ефект для відстеження modalAmount
+  // Ефект для відстеження реферальної інформації
   React.useEffect(() => {
-    console.log('[DEBUG] Modal amount updated:', modalAmount);
-  }, [modalAmount]);
+    if (referrer) {
+      console.log('[DEBUG] Active referral from:', referrer);
+      console.log('[DEBUG] Time remaining:', timeRemaining);
+    }
+  }, [referrer, timeRemaining]);
 
   const handleStake = async () => {
     const stakeAmount = amount.trim();
@@ -180,25 +201,36 @@ export default function StakingClient() {
       return;
     }
 
-    setModalAmount(stakeAmount); // Встановлюємо modalAmount перед стейкінгом
-    
+    setModalAmount(stakeAmount);
     setIsStaking(true);
+    
     try {
       console.log('[DEBUG] Initiating stake with amount:', stakeAmount);
       await actions.stake(stakeAmount, selectedPeriod);
       console.log('[DEBUG] Stake successful');
+
+      // Перевіряємо реферальне запрошення
+      if (hasActiveReferral && referrer) {
+        try {
+          await actions.registerReferrer(referrer);
+          showToast('Referral bonus activated', 'success');
+          clearReferral();
+        } catch (error) {
+          console.error('[DEBUG] Referral registration error:', error);
+        }
+      }
+
       setAmount('');
-      // НЕ очищаємо modalAmount тут
     } catch (error) {
       console.error('[DEBUG] Stake error:', error);
       showToast(error instanceof Error ? error.message : 'Failed to stake', 'error');
-      setModalAmount(''); // Очищаємо тільки при помилці
+      setModalAmount('');
     } finally {
       setIsStaking(false);
     }
   };
 
-  const handleClaimAndStake = async () => {
+const handleClaimAndStake = async () => {
     console.log('[DEBUG] Claiming rewards and preparing to stake...');
     try {
       await actions.claim();
@@ -207,7 +239,7 @@ export default function StakingClient() {
       console.error('[DEBUG] Claim error:', error);
       showToast(error instanceof Error ? error.message : 'Failed to claim rewards', 'error');
     } finally {
-      setModalAmount(''); // Очищаємо modalAmount після завершення
+      setModalAmount('');
     }
   };
 
@@ -228,6 +260,18 @@ export default function StakingClient() {
         args: [parseEther(stakeAmount), BigInt(selectedPeriod)]
       });
       console.log('[DEBUG] Force stake successful');
+
+      // Реєстрація реферера при форс-стейку
+      if (hasActiveReferral && referrer) {
+        try {
+          await actions.registerReferrer(referrer);
+          showToast('Referral bonus activated', 'success');
+          clearReferral();
+        } catch (error) {
+          console.error('[DEBUG] Referral registration error:', error);
+        }
+      }
+
       setAmount('');
       modals.setShowWarningModal(false);
     } catch (error) {
@@ -235,11 +279,11 @@ export default function StakingClient() {
       showToast(error instanceof Error ? error.message : 'Failed to stake', 'error');
     } finally {
       setIsStaking(false);
-      setModalAmount(''); // Очищаємо modalAmount після завершення
+      setModalAmount('');
     }
   };
 
-const totalPendingRewards = userStats?.stakeInfo
+  const totalPendingRewards = userStats?.stakeInfo
     ? (
         Number(userStats.stakeInfo.pendingRewards) +
         Number(userStats.stakeInfo.referralBonus)
@@ -253,15 +297,17 @@ const totalPendingRewards = userStats?.stakeInfo
     userStats?.stakeInfo && Number(userStats.stakeInfo.totalAmount) > 0;
   const isStakeLocked = hasActiveStake && userStats?.stakeInfo?.isLocked;
 
-  // Додаємо розширене логування
+  // Розширене логування
   console.log('Component render state:');
   console.log('Amount:', amount);
   console.log('Modal amount:', modalAmount);
   console.log('Selected period:', selectedPeriod);
   console.log('User stats:', userStats);
   console.log('Total pending rewards:', totalPendingRewards);
+  console.log('Referrer:', referrer);
+  console.log('Has active referral:', hasActiveReferral);
 
-  if (!mounted) return null;
+if (!mounted) return null;
 
   if (!address) {
     return (
@@ -276,15 +322,13 @@ const totalPendingRewards = userStats?.stakeInfo
     );
   }
 
-return (
+  return (
     <>
-      {console.log('Rendering modal with amount:', modalAmount)}
-
       <Modal
         isOpen={modals.showWarningModal}
         onClose={() => {
           modals.setShowWarningModal(false);
-          setModalAmount(''); // Очищаємо при закритті
+          setModalAmount('');
         }}
         title="Unclaimed Rewards"
       >
@@ -334,13 +378,26 @@ return (
         </div>
       </Modal>
 
-<section className="container mx-auto px-4 pt-24">
+      <section className="container mx-auto px-4 pt-24">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Staking</h1>
           <p className="text-gray-400">
             Lock your ZORIUM tokens to earn rewards and increase your level.
           </p>
         </div>
+
+{/* Реферальний банер та інформація про бонуси */}
+        {hasActiveReferral && referrer && showReferralBanner && (
+          <ReferralBanner 
+            referrer={referrer}
+            timeRemaining={timeRemaining}
+            onClose={() => setShowReferralBanner(false)}
+          />
+        )}
+
+        {hasActiveReferral && referrer && (
+          <ReferralBenefits />
+        )}
 
         {hasStakeHistory && (
           <StakeHistory totalHistoricalStake={userStats?.totalHistoricalStake} />
@@ -406,7 +463,7 @@ return (
           </Card>
         )}
 
-{userStats && (
+        {userStats && (
           <div className="mb-8">
             <LevelProgress
               level={userStats.level}
@@ -418,15 +475,12 @@ return (
           </div>
         )}
 
-        {Number(amount) >= 100 && (
+{Number(amount) >= 100 && (
           <EstimatedRewards
             baseAmount={amount}
             periodMultiplier={STAKING_PERIODS[selectedPeriod].multiplier}
             levelBonus={userStats?.stakeInfo?.levelBonus ?? 0}
-            hasReferralBonus={
-              userStats?.referrer !== undefined &&
-              userStats.referrer !== '0x0000000000000000000000000000000000000000'
-            }
+            hasReferralBonus={hasActiveReferral && Boolean(referrer)}
           />
         )}
 
