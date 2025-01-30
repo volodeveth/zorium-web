@@ -1,59 +1,41 @@
 // src/components/ui/referral-benefits.tsx
 'use client';
 
-import React from "react";
+import React from 'react';
 import { Card } from './card';
+import { motion } from 'framer-motion';
 import { BadgePercent, TrendingUp, Users, Coins, Gift } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
-interface BenefitItemProps { 
-  icon: any; 
-  title: string; 
+interface BenefitItemProps {
+  icon: React.ElementType;
+  title: string;
   description: string;
   delay: number;
 }
 
-const BenefitItem = React.memo(({ 
+const BenefitItem = ({ 
   icon: Icon, 
   title, 
   description,
   delay 
-}: BenefitItemProps) => {
-  console.log('[REFERRAL-BENEFITS] Rendering benefit item:', {
-    title,
-    description,
-    delay
-  });
+}: BenefitItemProps) => (
+  <motion.div
+    initial={{ opacity: 0, x: -20 }}
+    animate={{ opacity: 1, x: 0 }}
+    transition={{ delay, duration: 0.3 }}
+    className="flex items-start gap-3"
+  >
+    <div className="p-2 bg-primary/10 rounded-lg mt-1">
+      <Icon className="w-4 h-4 text-primary" />
+    </div>
+    <div>
+      <p className="font-medium text-white">{title}</p>
+      <p className="text-sm text-gray-400">{description}</p>
+    </div>
+  </motion.div>
+);
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay, duration: 0.3 }}
-      className="flex items-start gap-3"
-      onAnimationStart={() => {
-        console.log('[REFERRAL-BENEFITS] Starting animation for:', title);
-      }}
-      onAnimationComplete={() => {
-        console.log('[REFERRAL-BENEFITS] Completed animation for:', title);
-      }}
-    >
-      <div className="p-2 bg-primary/10 rounded-lg mt-1">
-        <Icon className="w-4 h-4 text-primary" />
-      </div>
-      <div>
-        <p className="font-medium text-white">{title}</p>
-        <p className="text-sm text-gray-400">{description}</p>
-      </div>
-    </motion.div>
-  );
-});
-
-BenefitItem.displayName = 'BenefitItem';
-
-const ReferralBenefits = React.memo(() => {
-  console.log('[REFERRAL-BENEFITS] Initializing ReferralBenefits component');
-
+export function ReferralBenefits() {
   const benefits = [
     {
       icon: Gift,
@@ -77,15 +59,6 @@ const ReferralBenefits = React.memo(() => {
     }
   ];
 
-  React.useEffect(() => {
-    console.log('[REFERRAL-BENEFITS] Component mounted');
-    console.log('[REFERRAL-BENEFITS] Benefits configuration:', benefits);
-
-    return () => {
-      console.log('[REFERRAL-BENEFITS] Component unmounting');
-    };
-  }, []);
-
   return (
     <Card className="overflow-hidden mb-6">
       <div className="p-6">
@@ -93,12 +66,6 @@ const ReferralBenefits = React.memo(() => {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3 mb-6"
-          onAnimationStart={() => {
-            console.log('[REFERRAL-BENEFITS] Starting header animation');
-          }}
-          onAnimationComplete={() => {
-            console.log('[REFERRAL-BENEFITS] Completed header animation');
-          }}
         >
           <div className="p-2 bg-primary/10 rounded-lg">
             <BadgePercent className="w-5 h-5 text-primary" />
@@ -111,31 +78,18 @@ const ReferralBenefits = React.memo(() => {
           </div>
         </motion.div>
 
-        <AnimatePresence>
-          <div className="grid gap-6">
-            {benefits.map((benefit, index) => {
-              console.log('[REFERRAL-BENEFITS] Rendering benefit:', {
-                title: benefit.title,
-                index
-              });
-
-              return (
-                <BenefitItem
-                  key={benefit.title}
-                  icon={benefit.icon}
-                  title={benefit.title}
-                  description={benefit.description}
-                  delay={index * 0.1}
-                />
-              );
-            })}
-          </div>
-        </AnimatePresence>
+        <div className="grid gap-6">
+          {benefits.map((benefit, index) => (
+            <BenefitItem
+              key={benefit.title}
+              icon={benefit.icon}
+              title={benefit.title}
+              description={benefit.description}
+              delay={index * 0.1}
+            />
+          ))}
+        </div>
       </div>
     </Card>
   );
-});
-
-ReferralBenefits.displayName = 'ReferralBenefits';
-
-export { ReferralBenefits };
+}

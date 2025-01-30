@@ -1,3 +1,4 @@
+// src/hooks/useZorium.ts
 import { useContractRead, useContractWrite, useAccount, useWaitForTransaction } from 'wagmi';
 import { readContract } from '@wagmi/core';
 import { ZORIUM_CONTRACT_ADDRESS, ZORIUM_ABI } from '@/constants/contract';
@@ -6,8 +7,9 @@ import { useState, useCallback, useEffect } from 'react';
 import { useToast } from './useToast';
 import { useSearchParams } from 'next/navigation';
 import { useLocalStorage } from './useLocalStorage';
+import _ from 'lodash';
 
-// Debug logger
+// Debug logger configuration
 const logger = {
   info: (message: string, ...args: any[]) => {
     console.log(`[ZORIUM INFO] ${message}`, ...args);
@@ -55,7 +57,7 @@ export interface ReferralInfo {
   amount: string;
   since: number;
   level: string;
-  rewards?: {
+  rewards: {
     pending: string;
     total: string;
     lastUpdate: number;
@@ -123,34 +125,135 @@ export function useZorium() {
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [referralData, setReferralData] = useLocalStorage<ReferralData | null>('zorium_referral', null);
 
+  // Contract reads
+  const { data: lastActionTime, error: lastActionError } = useContractRead({
+    address: ZORIUM_CONTRACT_ADDRESS,
+    abi: ZORIUM_ABI,
+    functionName: 'lastActionTime',
+    args: address ? [address as Address] : undefined,
+    enabled: !!address,
+    watch: true,
+    onError: (error) => {
+      logger.error('Error fetching last action time', error);
+    }
+  });
 
+  const { 
+    data: totalStaked, 
+    refetch: refetchTotalStaked,
+    error: totalStakedError 
+  } = useContractRead({
+    address: ZORIUM_CONTRACT_ADDRESS,
+    abi: ZORIUM_ABI,
+    functionName: 'totalStaked',
+    watch: true,
+    onSuccess: (data) => {
+      logger.info('Total staked updated:', formatValue(data as bigint));
+    },
+    onError: (error) => {
+      logger.error('Error fetching total staked', error);
+    }
+  });
+
+  const { data: rewardPool, error: rewardPoolError } = useContractRead({
+    address: ZORIUM_CONTRACT_ADDRESS,
+    abi: ZORIUM_ABI,
+    functionName: 'rewardPool',
+    watch: true,
+    onSuccess: (data) => {
+      logger.info('Reward pool updated:', formatValue(data as bigint));
+    },
+    onError: (error) => {
+      logger.error('Error fetching reward pool', error);
+    }
+  });
+
+  const { 
+    data: stakerInfo, 
+    refetch: refetchStakerInfo,
+    error: stakerInfoError 
+  } = useContractRead({
+    address: ZORIUM_CONTRACT_ADDRESS,
+    abi: ZORIUM_ABI,
+    functionName: 'stakers',
+    args: address ? [address as Address] : undefined,
+    enabled: !!address,
+    watch: true,
+    onSuccess: (data) => {
+      logger.info('Staker info updated:', {
+        address,
+        data: {
+          amount: formatValue(data[0] as bigint),
+          startTime: Number(data[1]),
+          lockPeriod: Number(data[2]),
+          referrer: data[7],
+          referralCount: Number(data[8]),
+          isActive: data[12]
+        }
+      });
+    },
+    onError: (error) => {
+      logger.error('Error fetching staker info', error);
+    }
+  });
+
+  const { 
+    data: pendingRewards, 
+    refetch: refetchRewards,
+    error: pendingRewardsError 
+  } = useContractRead({
+    address: ZORIUM_CONTRACT_ADDRESS,
+    abi: ZORIUM_ABI,
+    functionName: 'calculateReward',
+    args: address ? [address as Address] : undefined,
+    enabled: !!address,
+    watch: true,
+    onError: (error) => {
+      logger.error('Error fetching pending rewards', error);
+    }
+  });
+
+  const { data: totalBurned, error: totalBurnedError } = useContractRead({
+    address: ZORIUM_CONTRACT_ADDRESS,
+    abi: ZORIUM_ABI,
+    functionName: 'totalBurned',
+    watch: true,
+    onSuccess: (data) => {
+      logger.info('Total burned updated:', formatValue(data as bigint));
+    },
+    onError: (error) => {
+      logger.error('Error fetching total burned', error);
+    }
+  });
+
+  // Effect for handling referral parameters
   useEffect(() => {
-  const ref = searchParams.get('ref');
-  logger.debug('Referral parameter detected:', ref);
-  
-  if (ref && isAddress(ref)) {
-    logger.info('Setting valid referrer address:', ref);
-    setReferrer(ref as Address);
+    const ref = searchParams.get('ref');
+    logger.debug('Referral parameter detected:', ref);
     
-    // Зберігаємо в localStorage
-    const newReferralData = {
-      referrer: ref as Address,
-      timestamp: Date.now()
-    };
-    setReferralData(newReferralData);
+    if (ref && isAddress(ref)) {
+      logger.info('Setting valid referrer address:', ref);
+      setReferrer(ref as Address);
+      
+      // Save to localStorage
+      const newReferralData = {
+        referrer: ref as Address,
+        timestamp: Date.now()
+      };
+      setReferralData(newReferralData);
 
-    // Очищаємо URL
-    const url = new URL(window.location.href);
-    url.searchParams.delete('ref');
-    window.history.replaceState({}, '', url.pathname);
-    
-    logger.info('Saved referral data:', newReferralData);
-  } else if (ref) {
-    logger.warn('Invalid referrer address detected:', ref);
-  }
-}, [searchParams]);
+      // Clean URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('ref');
+      window.history.replaceState({}, '', url.pathname);
+      
+      logger.info('Saved referral data:', newReferralData);
+    } else if (ref) {
+      logger.warn('Invalid referrer address detected:', ref);
+    }
+  }, [searchParams]);
 
-  // Helper functions
+// Helper functions
   const formatValue = (value: bigint | undefined): string => {
     if (!value) {
       logger.debug('Formatting empty value to 0');
@@ -217,7 +320,28 @@ export function useZorium() {
     };
   };
 
-const processStakeInfo = (info: any): StakeInfo | null => {
+  // Додайте це до допоміжних функцій у useZorium.ts
+  const getLevelNumber = (levelString: string): number => {
+    switch(levelString.toUpperCase()) {
+      case 'PLATINUM': return 3;
+      case 'GOLD': return 2;
+      case 'SILVER': return 1;
+      case 'BRONZE':
+      default: return 0;
+    }
+  };
+
+  const getLevelString = (levelNumber: number): string => {
+    switch(levelNumber) {
+      case 3: return 'PLATINUM';
+      case 2: return 'GOLD';
+      case 1: return 'SILVER';
+      case 0:
+      default: return 'BRONZE';
+    }
+  };
+
+  const processStakeInfo = (info: any): StakeInfo | null => {
     logger.debug('Processing stake info:', info);
 
     if (!info) {
@@ -320,174 +444,151 @@ const processStakeInfo = (info: any): StakeInfo | null => {
     }
   };
 
-  const checkCooldown = async (): Promise<boolean> => {
-    logger.debug('Checking cooldown');
-    try {
-      const now = Math.floor(Date.now() / 1000);
-      const lastAction = Number(lastActionTime || 0);
-      const cooldownTime = 3600;
+  // Функція для отримання даних про рефералів
+  const fetchReferralData = async (referrals: string[]): Promise<ReferralInfo[]> => {
+    logger.debug('Fetching referral data for:', referrals);
+    const referralData: ReferralInfo[] = [];
+    
+    for (const referralAddress of referrals) {
+      try {
+        const referralStakeInfo = await readContract({
+          address: ZORIUM_CONTRACT_ADDRESS,
+          abi: ZORIUM_ABI,
+          functionName: 'stakers',
+          args: [referralAddress as `0x${string}`]
+        });
 
-      logger.debug('Cooldown check values:', {
-        now,
-        lastAction,
-        cooldownTime,
-        timeSinceLastAction: now - lastAction
-      });
+        if (referralStakeInfo) {
+          const amount = formatValue(referralStakeInfo[0] as bigint);
+          const levelInfo = calculateLevel(Number(amount));
 
-      if (lastAction + cooldownTime > now) {
-        const waitTime = lastAction + cooldownTime - now;
-        const minutes = Math.ceil(waitTime / 60);
-        logger.warn('Cooldown active:', { waitTime, minutes });
-        showToast(`Please wait ${minutes} minutes before next action`, 'error');
-        return false;
+          const referralInfo: ReferralInfo = {
+            address: referralAddress as Address,
+            isActive: referralStakeInfo[12] as boolean,
+            amount: amount,
+            since: Number(referralStakeInfo[1]),
+            level: levelInfo.level,
+            rewards: {
+              pending: formatValue(referralStakeInfo[9] as bigint),
+              total: formatValue(referralStakeInfo[11] as bigint),
+              lastUpdate: Number(referralStakeInfo[4])
+            }
+          };
+
+          logger.debug('Processed referral info:', referralInfo);
+          referralData.push(referralInfo);
+        }
+      } catch (error) {
+        logger.error('Error fetching referral data for address:', {
+          address: referralAddress,
+          error
+        });
       }
+    }
+    
+    return referralData;
+  };
 
-      logger.debug('Cooldown check passed');
-      return true;
+  // Effect for loading referral data
+  useEffect(() => {
+  const loadReferralData = async () => {
+    if (!address || !stakerInfo) {
+      logger.debug('No address or staker info, skipping referral data load');
+      return;
+    }
+    
+    logger.info('Loading referral data for address:', address);
+    setIsLoadingReferrals(true);
+    
+    try {
+      const referralCount = Number(stakerInfo[8] || 0);
+      logger.debug('Referral count:', referralCount);
+
+      // Використовуємо безпосередньо дані з stakerInfo для отримання рефералів
+      // За припущенням, що referrals знаходяться в індексі 13
+      const referralAddresses = referralCount > 0 ? (stakerInfo[13] as string[] || []) : [];
+      logger.debug('Raw referrals addresses:', referralAddresses);
+
+      if (Array.isArray(referralAddresses) && referralAddresses.length > 0) {
+        const referralDataPromises = referralAddresses.map(async (referralAddress) => {
+          try {
+            const referralStakeInfo = await readContract({
+              address: ZORIUM_CONTRACT_ADDRESS,
+              abi: ZORIUM_ABI,
+              functionName: 'stakers',
+              args: [referralAddress as `0x${string}`]
+            });
+
+            if (referralStakeInfo) {
+              const amount = formatValue(referralStakeInfo[0] as bigint);
+              const levelInfo = calculateLevel(Number(amount));
+
+              const referralInfo: ReferralInfo = {  // Явно вказуємо тип
+                address: referralAddress as Address,
+                isActive: referralStakeInfo[12] as boolean,
+                amount: amount,
+                since: Number(referralStakeInfo[1]),
+                level: levelInfo.level,
+                rewards: {  // Завжди надаємо rewards
+                  pending: formatValue(referralStakeInfo[9] as bigint),
+                  total: formatValue(referralStakeInfo[11] as bigint),
+                  lastUpdate: Number(referralStakeInfo[4])
+                }
+              };
+
+              return referralInfo;
+            }
+            return null;
+          } catch (error) {
+            logger.error('Error fetching referral data for address:', {
+              address: referralAddress,
+              error
+            });
+            return null;
+          }
+        });
+
+        const referralData = (await Promise.all(referralDataPromises)).filter((data): data is ReferralInfo => data !== null);
+        logger.debug('Processed referral data:', referralData);
+        
+        setReferralsData(referralData);
+
+        // Обробляємо рівні рефералів
+        const levels = [0, 1, 2].map(levelNumber => {
+          const levelString = getLevelString(levelNumber);
+          const levelReferrals = referralData.filter(r => r.level === levelString);
+          logger.debug(`Level ${levelString} referrals:`, levelReferrals);
+  
+          return {
+            level: levelNumber,
+            count: levelReferrals.length,
+            activeCount: levelReferrals.filter(r => r.isActive).length,
+            totalEarned: levelReferrals.reduce((acc, r) => acc + Number(r.rewards.total || 0), 0).toFixed(2),
+            pendingRewards: levelReferrals.reduce((acc, r) => acc + Number(r.rewards.pending || 0), 0).toFixed(2),
+            commission: 15 - (levelNumber * 7)
+          };
+        });
+        
+        logger.info('Updated referral levels:', levels);
+        setReferralLevels(levels);
+      } else {
+        logger.debug('No referrals found');
+        setReferralsData([]);
+        setReferralLevels([]);
+      }
     } catch (error) {
-      logger.error('Cooldown check error', error);
-      return false;
+      logger.error('Error loading referral data', error);
+      setReferralsData([]);
+      setReferralLevels([]);
+    } finally {
+      setIsLoadingReferrals(false);
     }
   };
 
-  // Contract reads
-  const { data: lastActionTime, error: lastActionError } = useContractRead({
-    address: ZORIUM_CONTRACT_ADDRESS,
-    abi: ZORIUM_ABI,
-    functionName: 'lastActionTime',
-    args: address ? [address as Address] : undefined,
-    enabled: !!address,
-    watch: true,
-    onError: (error) => {
-      logger.error('Error fetching last action time', error);
-    }
-  });
+  loadReferralData();
+}, [address, stakerInfo]);
 
-  const { 
-    data: totalStaked, 
-    refetch: refetchTotalStaked,
-    error: totalStakedError 
-  } = useContractRead({
-    address: ZORIUM_CONTRACT_ADDRESS,
-    abi: ZORIUM_ABI,
-    functionName: 'totalStaked',
-    watch: true,
-    onSuccess: (data) => {
-      logger.info('Total staked updated:', formatValue(data as bigint));
-    },
-    onError: (error) => {
-      logger.error('Error fetching total staked', error);
-    }
-  });
-
-  const { data: rewardPool, error: rewardPoolError } = useContractRead({
-    address: ZORIUM_CONTRACT_ADDRESS,
-    abi: ZORIUM_ABI,
-    functionName: 'rewardPool',
-    watch: true,
-    onSuccess: (data) => {
-      logger.info('Reward pool updated:', formatValue(data as bigint));
-    },
-    onError: (error) => {
-      logger.error('Error fetching reward pool', error);
-    }
-  });
-
-const { 
-    data: stakerInfo, 
-    refetch: refetchStakerInfo,
-    error: stakerInfoError 
-  } = useContractRead({
-    address: ZORIUM_CONTRACT_ADDRESS,
-    abi: ZORIUM_ABI,
-    functionName: 'stakers',
-    args: address ? [address as Address] : undefined,
-    enabled: !!address,
-    watch: true,
-    onSuccess: (data) => {
-      logger.info('Staker info updated:', {
-        address,
-        data: {
-          amount: formatValue(data[0] as bigint),
-          startTime: Number(data[1]),
-          lockPeriod: Number(data[2]),
-          referrer: data[7],
-          referralCount: Number(data[8]),
-          isActive: data[12]
-        }
-      });
-    },
-    onError: (error) => {
-      logger.error('Error fetching staker info', error);
-    }
-  });
-
-  const { 
-    data: pendingRewards, 
-    refetch: refetchRewards,
-    error: pendingRewardsError 
-  } = useContractRead({
-    address: ZORIUM_CONTRACT_ADDRESS,
-    abi: ZORIUM_ABI,
-    functionName: 'calculateReward',
-    args: address ? [address as Address] : undefined,
-    enabled: !!address,
-    watch: true,
-    onError: (error) => {
-      logger.error('Error fetching pending rewards', error);
-    }
-  });
-
-  const { data: totalBurned, error: totalBurnedError } = useContractRead({
-    address: ZORIUM_CONTRACT_ADDRESS,
-    abi: ZORIUM_ABI,
-    functionName: 'totalBurned',
-    watch: true,
-    onSuccess: (data) => {
-      logger.info('Total burned updated:', formatValue(data as bigint));
-    },
-    onError: (error) => {
-      logger.error('Error fetching total burned', error);
-    }
-  });
-
-  const processUserStats = useCallback((): UserStats | undefined => {
-    logger.debug('Processing user stats');
-    
-    if (!stakerInfo) {
-      logger.info('No staker info available for stats processing');
-      return undefined;
-    }
-
-    try {
-      const amount = Number(formatValue(stakerInfo[0] as bigint));
-      const totalHistoricalStake = formatValue(stakerInfo[10] as bigint);
-      const levelInfo = calculateLevel(amount);
-      const stakeInfo = processStakeInfo(stakerInfo);
-
-      const stats = {
-        totalStaked: amount.toString(),
-        level: levelInfo.level,
-        levelProgress: levelInfo.progress,
-        nextLevelThreshold: levelInfo.next.toLocaleString(),
-        isActive: stakerInfo[12] as boolean,
-        referrer: stakerInfo[7] as Address,
-        referralCount: Number(stakerInfo[8]),
-        referrals: referralsData,
-        stakeInfo,
-        referralLevels,
-        totalHistoricalStake
-      };
-
-      logger.debug('Processed user stats:', stats);
-      return stats;
-    } catch (error) {
-      logger.error('Error processing user stats', error);
-      return undefined;
-    }
-  }, [stakerInfo, referralsData, referralLevels]);
-
-  // Contract writes
+// Contract writes
   const { writeAsync: stake, data: stakeTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
@@ -515,7 +616,6 @@ const {
     }
   });
 
-  // Referral registration
   const { writeAsync: registerReferrer, data: referrerTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
@@ -600,35 +700,45 @@ const {
     },
   });
 
-const refetchAll = useCallback(() => {
+  const refetchAll = useCallback(() => {
     logger.debug('Refetching all data');
     refetchTotalStaked();
     refetchStakerInfo();
     refetchRewards();
   }, [refetchTotalStaked, refetchStakerInfo, refetchRewards]);
 
-  // Функція для реєстрації реферера
-  const registerNewReferrer = async (referrerAddress: string): Promise<boolean> => {
-    logger.info('Starting referrer registration process', { referrerAddress });
-    
+  // Security check functions
+  const checkCooldown = async (): Promise<boolean> => {
+    logger.debug('Checking cooldown');
     try {
-      if (!isAddress(referrerAddress)) {
-        logger.error('Invalid referrer address format', { referrerAddress });
-        throw new Error('Invalid referrer address format');
+      const now = Math.floor(Date.now() / 1000);
+      const lastAction = Number(lastActionTime || 0);
+      const cooldownTime = 3600;
+
+      logger.debug('Cooldown check values:', {
+        now,
+        lastAction,
+        cooldownTime,
+        timeSinceLastAction: now - lastAction
+      });
+
+      if (lastAction + cooldownTime > now) {
+        const waitTime = lastAction + cooldownTime - now;
+        const minutes = Math.ceil(waitTime / 60);
+        logger.warn('Cooldown active:', { waitTime, minutes });
+        showToast(`Please wait ${minutes} minutes before next action`, 'error');
+        return false;
       }
 
-      logger.debug('Registering referrer', { referrerAddress });
-      await registerReferrer({ args: [referrerAddress as `0x${string}`] });
-      
-      logger.info('Referrer registration transaction submitted', { referrerAddress });
-      refetchAll();
+      logger.debug('Cooldown check passed');
       return true;
     } catch (error) {
-      logger.error('Register referrer error', error);
-      throw error;
+      logger.error('Cooldown check error', error);
+      return false;
     }
   };
 
+  // Action functions
   const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean> => {
     logger.info('Starting stake process', { amount, periodIndex });
     
@@ -775,20 +885,147 @@ const refetchAll = useCallback(() => {
     }
   };
 
-  return {
-    stats: {
+  const registerNewReferrer = async (referrerAddress: string): Promise<boolean> => {
+    logger.info('Starting referrer registration process', { referrerAddress });
+    
+    try {
+      if (!isAddress(referrerAddress)) {
+        logger.error('Invalid referrer address format', { referrerAddress });
+        throw new Error('Invalid referrer address format');
+      }
+
+      logger.debug('Registering referrer', { referrerAddress });
+      await registerReferrer({ args: [referrerAddress as `0x${string}`] });
+      
+      logger.info('Referrer registration transaction submitted', { referrerAddress });
+      refetchAll();
+      return true;
+    } catch (error) {
+      logger.error('Register referrer error', error);
+      throw error;
+    }
+  };
+
+const processUserStats = useCallback((): UserStats | undefined => {
+    logger.debug('Processing user stats');
+    
+    if (!stakerInfo) {
+      logger.info('No staker info available for stats processing');
+      return undefined;
+    }
+
+    try {
+      const amount = Number(formatValue(stakerInfo[0] as bigint));
+      const totalHistoricalStake = formatValue(stakerInfo[10] as bigint);
+      const levelInfo = calculateLevel(amount);
+      const stakeInfo = processStakeInfo(stakerInfo);
+
+      const referralCount = Number(stakerInfo[8]);
+      logger.debug('Processing referral info:', {
+        referralCount,
+        referrer: stakerInfo[7],
+        referrals: referralsData
+      });
+
+      const stats: UserStats = {
+        totalStaked: amount.toString(),
+        level: levelInfo.level,
+        levelProgress: levelInfo.progress,
+        nextLevelThreshold: levelInfo.next.toLocaleString(),
+        isActive: stakerInfo[12] as boolean,
+        referrer: stakerInfo[7] as Address,
+        referralCount: referralCount,
+        referrals: referralsData,
+        stakeInfo,
+        referralLevels,
+        totalHistoricalStake
+      };
+
+      logger.debug('Processed user stats:', stats);
+      return stats;
+    } catch (error) {
+      logger.error('Error processing user stats', error);
+      return undefined;
+    }
+  }, [stakerInfo, referralsData, referralLevels]);
+
+  // Форматування референційних даних для UI
+  const processReferralStats = useCallback(() => {
+    if (!referralsData.length) {
+      logger.debug('No referral data to process');
+      return [];
+    }
+
+    logger.debug('Processing referral statistics', { 
+      totalReferrals: referralsData.length,
+      activeReferrals: referralsData.filter(r => r.isActive).length 
+    });
+
+    const stats = _.chain(referralsData)
+      .groupBy(r => calculateLevel(Number(r.amount)).level)
+      .map((refs, level) => {
+        const activeRefs = refs.filter(r => r.isActive);
+        const totalEarned = refs.reduce((sum, r) => sum + Number(r.rewards?.total || 0), 0);
+        const pendingRewards = refs.reduce((sum, r) => sum + Number(r.rewards?.pending || 0), 0);
+
+        return {
+          level,
+          count: refs.length,
+          activeCount: activeRefs.length,
+          totalEarned: totalEarned.toFixed(2),
+          pendingRewards: pendingRewards.toFixed(2),
+          commission: getReferralCommission(level)
+        };
+      })
+      .value();
+
+    logger.debug('Processed referral stats:', stats);
+    return stats;
+  }, [referralsData]);
+
+  // Отримання комісії для рівня реферала
+  const getReferralCommission = (level: string): number => {
+    switch(level) {
+      case 'PLATINUM':
+      case 'GOLD':
+        return REFERRAL_COMMISSIONS[0];
+      case 'SILVER':
+        return REFERRAL_COMMISSIONS[1];
+      case 'BRONZE':
+      default:
+        return REFERRAL_COMMISSIONS[2];
+    }
+  };
+
+  // Форматування загальної статистики
+  const processGlobalStats = useCallback(() => {
+    return {
       totalStaked: formatValue(totalStaked as bigint),
       rewardPool: formatValue(rewardPool as bigint),
       totalBurned: formatValue(totalBurned as bigint),
-    },
+    };
+  }, [totalStaked, rewardPool, totalBurned]);
+
+  // Return hook data
+  return {
+    // Global statistics
+    stats: processGlobalStats(),
+    
+    // User specific data
     userStats: processUserStats(),
+    
+    // Actions
     actions: {
       stake: stakeTokens,
       unstake: unstakeTokens,
       claim: claimRewards,
       registerReferrer: registerNewReferrer,
     },
+    
+    // Direct contract interaction
     stake,
+    
+    // Referral information
     referralInfo: {
       currentReferrer: stakerInfo?.[7] as Address,
       referrals: referralsData,
@@ -796,14 +1033,30 @@ const refetchAll = useCallback(() => {
       isLoadingReferrals,
       levels: referralLevels
     },
+    
+    // Utility functions
     utils: {
       formatValue,
       calculateLevel,
       checkCooldown
     },
+    
+    // Modal states
     modals: {
       showWarningModal,
       setShowWarningModal
+    },
+
+    // Loading states
+    isLoading: {
+      referrals: isLoadingReferrals
+    },
+
+    // Error states
+    errors: {
+      staker: stakerInfoError,
+      rewards: pendingRewardsError,
+      totals: totalStakedError
     }
   };
 }

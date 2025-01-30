@@ -43,7 +43,8 @@ export const ZORIUM_ABI = [
       { "name": "referralBonus", "type": "uint256" },
       { "name": "totalHistoricalStake", "type": "uint256" },
       { "name": "totalHistoricalRewards", "type": "uint256" },
-      { "name": "isActive", "type": "bool" }
+      { "name": "isActive", "type": "bool" },
+      { "name": "referrals", "type": "address[]" }
     ],
     "stateMutability": "view",
     "type": "function"
