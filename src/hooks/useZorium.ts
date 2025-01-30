@@ -6,6 +6,22 @@ import { useState, useCallback, useEffect } from 'react';
 import { useToast } from './useToast';
 import { useSearchParams } from 'next/navigation';
 
+// Debug logger
+const logger = {
+  info: (message: string, ...args: any[]) => {
+    console.log(`[ZORIUM INFO] ${message}`, ...args);
+  },
+  error: (message: string, error: any) => {
+    console.error(`[ZORIUM ERROR] ${message}:`, error);
+  },
+  warn: (message: string, ...args: any[]) => {
+    console.warn(`[ZORIUM WARN] ${message}`, ...args);
+  },
+  debug: (message: string, ...args: any[]) => {
+    console.debug(`[ZORIUM DEBUG] ${message}`, ...args);
+  }
+};
+
 // Enums
 export enum UserLevel {
   BRONZE,
@@ -86,6 +102,8 @@ const LEVEL_BONUSES = {
 const REFERRAL_COMMISSIONS = [15, 8, 5] as const;
 
 export function useZorium() {
+  logger.info('Initializing useZorium hook');
+
   // Base hooks
   const { address } = useAccount();
   const { showToast } = useToast();
@@ -100,18 +118,28 @@ export function useZorium() {
 
   useEffect(() => {
     const ref = searchParams.get('ref');
+    logger.debug('Referral parameter detected:', ref);
+    
     if (ref && isAddress(ref)) {
+      logger.info('Setting valid referrer address:', ref);
       setReferrer(ref as Address);
+    } else if (ref) {
+      logger.warn('Invalid referrer address detected:', ref);
     }
   }, [searchParams]);
 
   // Helper functions
   const formatValue = (value: bigint | undefined): string => {
-    if (!value) return '0';
+    if (!value) {
+      logger.debug('Formatting empty value to 0');
+      return '0';
+    }
     try {
-      return Number(formatEther(value)).toFixed(2);
+      const formatted = Number(formatEther(value)).toFixed(2);
+      logger.debug('Formatted value:', { raw: value.toString(), formatted });
+      return formatted;
     } catch (error) {
-      console.error('[ZORIUM] Error formatting value:', error);
+      logger.error('Error formatting value', error);
       return '0';
     }
   };
@@ -121,7 +149,10 @@ export function useZorium() {
     progress: number; 
     next: number 
   } => {
+    logger.debug('Calculating level for amount:', amount);
+
     if (amount >= LEVEL_THRESHOLDS.PLATINUM) {
+      logger.debug('PLATINUM level achieved');
       return { 
         level: 'PLATINUM', 
         progress: 100, 
@@ -134,24 +165,29 @@ export function useZorium() {
         (amount - LEVEL_THRESHOLDS.GOLD) / 
         (LEVEL_THRESHOLDS.PLATINUM - LEVEL_THRESHOLDS.GOLD)
       ) * 100;
+      logger.debug('GOLD level calculated:', { progress });
       return { 
         level: 'GOLD', 
         progress, 
         next: LEVEL_THRESHOLDS.PLATINUM 
       };
     }
+
     if (amount >= LEVEL_THRESHOLDS.SILVER) {
       const progress = (
         (amount - LEVEL_THRESHOLDS.SILVER) / 
         (LEVEL_THRESHOLDS.GOLD - LEVEL_THRESHOLDS.SILVER)
       ) * 100;
+      logger.debug('SILVER level calculated:', { progress });
       return { 
         level: 'SILVER', 
         progress, 
         next: LEVEL_THRESHOLDS.GOLD 
       };
     }
+
     const progress = (amount / LEVEL_THRESHOLDS.SILVER) * 100;
+    logger.debug('BRONZE level calculated:', { progress });
     return { 
       level: 'BRONZE', 
       progress, 
@@ -159,9 +195,11 @@ export function useZorium() {
     };
   };
 
-  const processStakeInfo = (info: any): StakeInfo | null => {
+const processStakeInfo = (info: any): StakeInfo | null => {
+    logger.debug('Processing stake info:', info);
+
     if (!info) {
-      console.log('[ZORIUM] No staker info available');
+      logger.info('No staker info available');
       return null;
     }
 
@@ -174,28 +212,67 @@ export function useZorium() {
       const totalHistoricalStake = info[10] as bigint;
       const isActive = info[12] as boolean;
 
-      if (amount <= BigInt(0)) return null;
+      logger.debug('Raw stake values:', {
+        amount: amount.toString(),
+        startTime,
+        lockPeriod,
+        multiplier,
+        lastRewardCalculation,
+        totalHistoricalStake: totalHistoricalStake.toString(),
+        isActive
+      });
+
+      if (amount <= BigInt(0)) {
+        logger.info('Zero or negative stake amount detected');
+        return null;
+      }
 
       const now = Math.floor(Date.now() / 1000);
       const unlockTime = startTime + lockPeriod;
       const timeRemaining = unlockTime - now;
 
+      logger.debug('Time calculations:', {
+        now,
+        unlockTime,
+        timeRemaining
+      });
+
       const amountNumber = Number(formatValue(amount));
       const levelInfo = calculateLevel(amountNumber);
       const levelBonus = LEVEL_BONUSES[levelInfo.level as keyof typeof LEVEL_BONUSES] || 0;
 
+      logger.debug('Level calculations:', {
+        amountNumber,
+        level: levelInfo.level,
+        levelBonus
+      });
+
+      // Reward calculations
       const baseAnnualReward = amountNumber * 0.05;
       const periodMultiplier = multiplier / 100;
       const withPeriodBonus = baseAnnualReward * periodMultiplier;
       const withLevelBonus = withPeriodBonus * (1 + levelBonus / 100);
 
+      logger.debug('Reward calculations:', {
+        baseAnnualReward,
+        periodMultiplier,
+        withPeriodBonus,
+        withLevelBonus
+      });
+
       const yearInDays = 365;
       const daysSinceLastCalculation = (now - lastRewardCalculation) / (24 * 60 * 60);
       const proRatedRewards = withLevelBonus * (daysSinceLastCalculation / yearInDays);
 
-      const referralBonus = formatValue(info[9] as bigint);
+      logger.debug('Pro-rated rewards:', {
+        daysSinceLastCalculation,
+        proRatedRewards
+      });
 
-return {
+      const referralBonus = formatValue(info[9] as bigint);
+      logger.debug('Referral bonus:', referralBonus);
+
+      const processedStake = {
         totalAmount: formatValue(amount),
         startTime,
         lockPeriod,
@@ -211,27 +288,42 @@ return {
         referralBonus,
         totalHistoricalStake: formatValue(totalHistoricalStake)
       };
+
+      logger.debug('Processed stake info:', processedStake);
+      return processedStake;
+
     } catch (error) {
-      console.error('[ZORIUM] Error processing stake info:', error);
+      logger.error('Error processing stake info', error);
       return null;
     }
   };
 
   const checkCooldown = async (): Promise<boolean> => {
+    logger.debug('Checking cooldown');
     try {
       const now = Math.floor(Date.now() / 1000);
       const lastAction = Number(lastActionTime || 0);
       const cooldownTime = 3600;
 
+      logger.debug('Cooldown check values:', {
+        now,
+        lastAction,
+        cooldownTime,
+        timeSinceLastAction: now - lastAction
+      });
+
       if (lastAction + cooldownTime > now) {
         const waitTime = lastAction + cooldownTime - now;
         const minutes = Math.ceil(waitTime / 60);
+        logger.warn('Cooldown active:', { waitTime, minutes });
         showToast(`Please wait ${minutes} minutes before next action`, 'error');
         return false;
       }
+
+      logger.debug('Cooldown check passed');
       return true;
     } catch (error) {
-      console.error('[ZORIUM] Cooldown check error:', error);
+      logger.error('Cooldown check error', error);
       return false;
     }
   };
@@ -245,7 +337,7 @@ return {
     enabled: !!address,
     watch: true,
     onError: (error) => {
-      console.error('[ZORIUM] Error fetching last action time:', error);
+      logger.error('Error fetching last action time', error);
     }
   });
 
@@ -259,10 +351,10 @@ return {
     functionName: 'totalStaked',
     watch: true,
     onSuccess: (data) => {
-      console.log('[ZORIUM] Total staked:', formatValue(data as bigint));
+      logger.info('Total staked updated:', formatValue(data as bigint));
     },
     onError: (error) => {
-      console.error('[ZORIUM] Error fetching total staked:', error);
+      logger.error('Error fetching total staked', error);
     }
   });
 
@@ -272,14 +364,14 @@ return {
     functionName: 'rewardPool',
     watch: true,
     onSuccess: (data) => {
-      console.log('[ZORIUM] Reward pool:', formatValue(data as bigint));
+      logger.info('Reward pool updated:', formatValue(data as bigint));
     },
     onError: (error) => {
-      console.error('[ZORIUM] Error fetching reward pool:', error);
+      logger.error('Error fetching reward pool', error);
     }
   });
 
-  const { 
+const { 
     data: stakerInfo, 
     refetch: refetchStakerInfo,
     error: stakerInfoError 
@@ -291,10 +383,20 @@ return {
     enabled: !!address,
     watch: true,
     onSuccess: (data) => {
-      console.log('[ZORIUM] Raw staker info:', data);
+      logger.info('Staker info updated:', {
+        address,
+        data: {
+          amount: formatValue(data[0] as bigint),
+          startTime: Number(data[1]),
+          lockPeriod: Number(data[2]),
+          referrer: data[7],
+          referralCount: Number(data[8]),
+          isActive: data[12]
+        }
+      });
     },
     onError: (error) => {
-      console.error('[ZORIUM] Error fetching staker info:', error);
+      logger.error('Error fetching staker info', error);
     }
   });
 
@@ -310,7 +412,7 @@ return {
     enabled: !!address,
     watch: true,
     onError: (error) => {
-      console.error('[ZORIUM] Error fetching pending rewards:', error);
+      logger.error('Error fetching pending rewards', error);
     }
   });
 
@@ -320,16 +422,18 @@ return {
     functionName: 'totalBurned',
     watch: true,
     onSuccess: (data) => {
-      console.log('[ZORIUM] Total burned:', formatValue(data as bigint));
+      logger.info('Total burned updated:', formatValue(data as bigint));
     },
     onError: (error) => {
-      console.error('[ZORIUM] Error fetching total burned:', error);
+      logger.error('Error fetching total burned', error);
     }
   });
 
   const processUserStats = useCallback((): UserStats | undefined => {
+    logger.debug('Processing user stats');
+    
     if (!stakerInfo) {
-      console.log('[ZORIUM] No staker info available');
+      logger.info('No staker info available for stats processing');
       return undefined;
     }
 
@@ -339,7 +443,7 @@ return {
       const levelInfo = calculateLevel(amount);
       const stakeInfo = processStakeInfo(stakerInfo);
 
-      return {
+      const stats = {
         totalStaked: amount.toString(),
         level: levelInfo.level,
         levelProgress: levelInfo.progress,
@@ -352,8 +456,11 @@ return {
         referralLevels,
         totalHistoricalStake
       };
+
+      logger.debug('Processed user stats:', stats);
+      return stats;
     } catch (error) {
-      console.error('[ZORIUM] Error processing user stats:', error);
+      logger.error('Error processing user stats', error);
       return undefined;
     }
   }, [stakerInfo, referralsData, referralLevels]);
@@ -364,7 +471,7 @@ return {
     abi: ZORIUM_ABI,
     functionName: 'createStake',
     onError: (error) => {
-      console.error('[ZORIUM] Stake write error:', error);
+      logger.error('Stake write error', error);
     }
   });
 
@@ -373,7 +480,7 @@ return {
     abi: ZORIUM_ABI,
     functionName: 'unstake',
     onError: (error) => {
-      console.error('[ZORIUM] Unstake write error:', error);
+      logger.error('Unstake write error', error);
     }
   });
 
@@ -382,17 +489,17 @@ return {
     abi: ZORIUM_ABI,
     functionName: 'claimReward',
     onError: (error) => {
-      console.error('[ZORIUM] Claim write error:', error);
+      logger.error('Claim write error', error);
     }
   });
 
-// Додаємо контрактний виклик для реєстрації реферера
+  // Referral registration
   const { writeAsync: registerReferrer, data: referrerTx } = useContractWrite({
     address: ZORIUM_CONTRACT_ADDRESS,
     abi: ZORIUM_ABI,
     functionName: 'registerReferrer',
     onError: (error) => {
-      console.error('[ZORIUM] Register referrer write error:', error);
+      logger.error('Register referrer write error', error);
     }
   });
 
@@ -400,20 +507,31 @@ return {
   useWaitForTransaction({
     hash: stakeTx?.hash,
     onSuccess: async () => {
+      logger.info('Stake transaction successful', { hash: stakeTx?.hash });
       showToast('Successfully staked tokens!', 'success');
+
+      // Referral registration after successful stake
       if (referrer && !stakerInfo?.[7]) {
+        logger.info('Attempting to register referrer after stake', { referrer });
         try {
           await registerReferrer({ args: [referrer] });
+          logger.info('Referral registration successful', { referrer });
           showToast('Referral registered successfully', 'success');
         } catch (error) {
-          console.error('[ZORIUM] Referral registration error:', error);
+          logger.error('Referral registration error after stake', error);
           showToast('Failed to register referral', 'error');
         }
+      } else {
+        logger.debug('No referrer to register or referrer already set', {
+          referrer,
+          existingReferrer: stakerInfo?.[7]
+        });
       }
+      
       refetchAll();
     },
     onError: (error) => {
-      console.error('[ZORIUM] Stake transaction error:', error);
+      logger.error('Stake transaction error', error);
       showToast(`Failed to stake: ${error.message}`, 'error');
     },
   });
@@ -421,11 +539,12 @@ return {
   useWaitForTransaction({
     hash: unstakeTx?.hash,
     onSuccess: () => {
+      logger.info('Unstake transaction successful', { hash: unstakeTx?.hash });
       showToast('Successfully unstaked tokens!', 'success');
       refetchAll();
     },
     onError: (error) => {
-      console.error('[ZORIUM] Unstake transaction error:', error);
+      logger.error('Unstake transaction error', error);
       showToast(`Failed to unstake: ${error.message}`, 'error');
     },
   });
@@ -433,11 +552,12 @@ return {
   useWaitForTransaction({
     hash: claimTx?.hash,
     onSuccess: () => {
+      logger.info('Claim transaction successful', { hash: claimTx?.hash });
       showToast('Successfully claimed rewards!', 'success');
       refetchAll();
     },
     onError: (error) => {
-      console.error('[ZORIUM] Claim transaction error:', error);
+      logger.error('Claim transaction error', error);
       showToast(`Failed to claim: ${error.message}`, 'error');
     },
   });
@@ -445,16 +565,21 @@ return {
   useWaitForTransaction({
     hash: referrerTx?.hash,
     onSuccess: () => {
+      logger.info('Referrer registration transaction successful', { 
+        hash: referrerTx?.hash,
+        referrer 
+      });
       showToast('Successfully registered referrer!', 'success');
       refetchAll();
     },
     onError: (error) => {
-      console.error('[ZORIUM] Referrer registration transaction error:', error);
+      logger.error('Referrer registration transaction error', error);
       showToast(`Failed to register referrer: ${error.message}`, 'error');
     },
   });
 
-  const refetchAll = useCallback(() => {
+const refetchAll = useCallback(() => {
+    logger.debug('Refetching all data');
     refetchTotalStaked();
     refetchStakerInfo();
     refetchRewards();
@@ -462,27 +587,54 @@ return {
 
   // Функція для реєстрації реферера
   const registerNewReferrer = async (referrerAddress: string): Promise<boolean> => {
+    logger.info('Starting referrer registration process', { referrerAddress });
+    
     try {
-      console.log('[ZORIUM] Registering referrer:', referrerAddress);
+      if (!isAddress(referrerAddress)) {
+        logger.error('Invalid referrer address format', { referrerAddress });
+        throw new Error('Invalid referrer address format');
+      }
+
+      logger.debug('Registering referrer', { referrerAddress });
       await registerReferrer({ args: [referrerAddress as `0x${string}`] });
+      
+      logger.info('Referrer registration transaction submitted', { referrerAddress });
       refetchAll();
       return true;
     } catch (error) {
-      console.error('[ZORIUM] Register referrer error:', error);
+      logger.error('Register referrer error', error);
       throw error;
     }
   };
 
-const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean> => {
+  const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean> => {
+    logger.info('Starting stake process', { amount, periodIndex });
+    
     try {
-      if (!(await checkCooldown())) return false;
+      // Check cooldown
+      if (!(await checkCooldown())) {
+        logger.warn('Stake blocked by cooldown');
+        return false;
+      }
 
+      // Get current stats
       const stats = processUserStats();
+      logger.debug('Current user stats for stake', { stats });
+
+      // Calculate total pending rewards
       const currentPendingRewards = Number(stats?.stakeInfo?.pendingRewards || '0');
       const currentReferralRewards = Number(stats?.stakeInfo?.referralBonus || '0');
       const totalCurrentRewards = currentPendingRewards + currentReferralRewards;
 
+      logger.debug('Pending rewards check', {
+        currentPendingRewards,
+        currentReferralRewards,
+        totalCurrentRewards
+      });
+
+      // Check for unclaimed rewards
       if (totalCurrentRewards > 0) {
+        logger.warn('Unclaimed rewards detected', { totalCurrentRewards });
         showToast(
           'You have unclaimed rewards. Please claim your rewards before creating a new stake.',
           'warning'
@@ -491,17 +643,20 @@ const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean
         return false;
       }
 
-      showToast('Initiating staking transaction...', 'loading');
-      console.log('[ZORIUM] Staking params:', {
-        amount: parseEther(amount),
+      // Prepare stake transaction
+      logger.info('Preparing stake transaction', {
+        parsedAmount: parseEther(amount),
         periodIndex: BigInt(periodIndex)
       });
 
+      showToast('Initiating staking transaction...', 'loading');
       await stake({ args: [parseEther(amount), BigInt(periodIndex)] });
+      
+      logger.info('Stake transaction submitted successfully');
       showToast('Please confirm the transaction', 'info');
       return true;
     } catch (error) {
-      console.error('[ZORIUM] Staking error:', error);
+      logger.error('Staking error', error);
       showToast(
         error instanceof Error ? error.message : 'Failed to stake tokens',
         'error'
@@ -511,27 +666,39 @@ const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean
   };
 
   const unstakeTokens = async (): Promise<boolean> => {
+    logger.info('Starting unstake process');
+    
     try {
-      if (!(await checkCooldown())) return false;
+      if (!(await checkCooldown())) {
+        logger.warn('Unstake blocked by cooldown');
+        return false;
+      }
 
       const stats = processUserStats();
+      logger.debug('Current user stats for unstake', { stats });
+
       if (!stats?.stakeInfo?.isActive) {
+        logger.warn('No active stake found for unstake');
         showToast('No active stake found', 'error');
         return false;
       }
 
       if (stats.stakeInfo.isLocked) {
         const days = Math.ceil(stats.stakeInfo.timeRemaining / 86400);
+        logger.warn('Stake is still locked', { daysRemaining: days });
         showToast(`Stake is locked for ${days} more days`, 'error');
         return false;
       }
 
+      logger.info('Initiating unstake transaction');
       showToast('Initiating unstaking transaction...', 'loading');
       await unstake();
+      
+      logger.info('Unstake transaction submitted successfully');
       showToast('Please confirm the transaction', 'info');
       return true;
     } catch (error) {
-      console.error('[ZORIUM] Unstaking error:', error);
+      logger.error('Unstaking error', error);
       showToast(
         error instanceof Error ? error.message : 'Failed to unstake tokens',
         'error'
@@ -541,11 +708,19 @@ const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean
   };
 
   const claimRewards = async (): Promise<boolean> => {
+    logger.info('Starting claim rewards process');
+    
     try {
-      if (!(await checkCooldown())) return false;
+      if (!(await checkCooldown())) {
+        logger.warn('Claim blocked by cooldown');
+        return false;
+      }
 
       const stats = processUserStats();
+      logger.debug('Current user stats for claim', { stats });
+
       if (!stats?.stakeInfo?.isActive) {
+        logger.warn('No active stake found for claim');
         showToast('No active stake found', 'error');
         return false;
       }
@@ -553,17 +728,23 @@ const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean
       const totalRewards = Number(stats.stakeInfo.pendingRewards) + 
                           Number(stats.stakeInfo.referralBonus);
       
+      logger.debug('Total rewards to claim', { totalRewards });
+      
       if (totalRewards === 0) {
+        logger.warn('No rewards available to claim');
         showToast('No rewards to claim', 'error');
         return false;
       }
 
+      logger.info('Initiating claim transaction');
       showToast('Claiming rewards...', 'loading');
       await claimReward();
+      
+      logger.info('Claim transaction submitted successfully');
       showToast('Please confirm the claim transaction', 'info');
       return true;
     } catch (error) {
-      console.error('[ZORIUM] Claim error:', error);
+      logger.error('Claim error', error);
       showToast(
         error instanceof Error ? error.message : 'Failed to claim rewards',
         'error'

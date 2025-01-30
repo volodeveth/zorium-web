@@ -1,6 +1,8 @@
 // src/components/ui/referral-banner.tsx
-import React, { useState } from 'react';
-import { Gift, X, Copy, Clock, CheckCircle } from 'lucide-react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Gift, X, Copy, Clock, CheckCircle2 } from 'lucide-react';
 import { Card } from './card';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -11,26 +13,75 @@ interface ReferralBannerProps {
 }
 
 export const ReferralBanner = ({ referrer, timeRemaining, onClose }: ReferralBannerProps) => {
-  const [copied, setCopied] = useState(false);
+  console.log('[REFERRAL-BANNER] Rendering with props:', {
+    referrer,
+    timeRemaining
+  });
 
-  const shortenAddress = (address: string) => 
-    `${address.slice(0, 6)}...${address.slice(-4)}`;
+  const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    console.log('[REFERRAL-BANNER] Component mounted');
+    setMounted(true);
+
+    return () => {
+      console.log('[REFERRAL-BANNER] Component unmounting');
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log('[REFERRAL-BANNER] Time remaining updated:', timeRemaining);
+  }, [timeRemaining]);
+
+  const shortenAddress = (address: string) => {
+    const shortened = `${address.slice(0, 6)}...${address.slice(-4)}`;
+    console.log('[REFERRAL-BANNER] Shortened address:', {
+      original: address,
+      shortened
+    });
+    return shortened;
+  };
 
   const formatTimeLeft = (ms: number) => {
+    console.log('[REFERRAL-BANNER] Formatting time:', ms);
     const hours = Math.floor(ms / (1000 * 60 * 60));
     const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}h ${minutes}m`;
+    const formatted = `${hours}h ${minutes}m`;
+    console.log('[REFERRAL-BANNER] Formatted time:', formatted);
+    return formatted;
   };
 
   const handleCopy = async () => {
+    console.log('[REFERRAL-BANNER] Copying address to clipboard:', referrer);
     try {
       await navigator.clipboard.writeText(referrer);
+      console.log('[REFERRAL-BANNER] Address copied successfully');
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => {
+        console.log('[REFERRAL-BANNER] Resetting copy state');
+        setCopied(false);
+      }, 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error('[REFERRAL-BANNER] Failed to copy:', err);
     }
   };
+
+  const handleClose = () => {
+    console.log('[REFERRAL-BANNER] Closing banner');
+    onClose();
+  };
+
+  if (!mounted) {
+    console.log('[REFERRAL-BANNER] Not mounted yet, returning null');
+    return null;
+  }
+
+  console.log('[REFERRAL-BANNER] Rendering banner with state:', {
+    copied,
+    timeRemaining,
+    formattedTime: formatTimeLeft(timeRemaining)
+  });
 
   return (
     <AnimatePresence>
@@ -43,7 +94,7 @@ export const ReferralBanner = ({ referrer, timeRemaining, onClose }: ReferralBan
         <Card className="bg-primary/5 border-primary/20 mb-6">
           <div className="p-6 relative">
             <button 
-              onClick={onClose}
+              onClick={handleClose}
               className="absolute top-4 right-4 p-2 hover:bg-primary/10 rounded-lg transition-colors"
             >
               <X className="w-4 h-4 text-primary" />
@@ -67,7 +118,7 @@ export const ReferralBanner = ({ referrer, timeRemaining, onClose }: ReferralBan
                   >
                     <span className="font-medium">{shortenAddress(referrer)}</span>
                     {copied ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
                     ) : (
                       <Copy className="w-4 h-4 text-primary" />
                     )}

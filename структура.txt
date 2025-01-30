@@ -20,10 +20,17 @@ D:.
 │
 ├───public
 │   │   apple-touch-icon.png
+│   │   dashboard-og.png
 │   │   explorer.ico
+│   │   faq-og.png
 │   │   favicon.ico
 │   │   geckoterminal.ico
 │   │   manifest.json
+│   │   nft-rewards-og.png
+│   │   og-image.png
+│   │   referral-og.png
+│   │   staking-og.png
+│   │   tokenomics-og.png
 │   │   uniswap.ico
 │   │   x.ico
 │   │   zora.ico
@@ -100,6 +107,8 @@ D:.
     │           card.tsx
     │           level-progress.tsx
     │           modal.tsx
+    │           referral-banner.tsx
+    │           referral-benefits.tsx
     │           stake-stats.tsx
     │           stat-card.tsx
     │           unlock-timer.tsx
