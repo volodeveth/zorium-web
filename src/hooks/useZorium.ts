@@ -1,7 +1,7 @@
 // src/hooks/useZorium.ts
 import { useContractRead, useContractWrite, useAccount, useWaitForTransaction } from 'wagmi';
 import { readContract } from '@wagmi/core';
-import { ZORIUM_CONTRACT_ADDRESS, ZORIUM_ABI } from '@/constants/contract';
+import { ZORIUM_CONTRACT_ADDRESS, ZORIUM_ABI, UserLevel as ContractUserLevel, CONSTANTS } from '@/constants/contract';
 import { parseEther, formatEther, isAddress, Address } from 'viem';
 import { useState, useCallback, useEffect } from 'react';
 import { useToast } from './useToast';
@@ -27,10 +27,10 @@ const logger = {
 
 // Enums
 export enum UserLevel {
-  BRONZE,
-  SILVER,
-  GOLD,
-  PLATINUM
+  BRONZE = 'BRONZE',
+  SILVER = 'SILVER',
+  GOLD = 'GOLD',
+  PLATINUM = 'PLATINUM'
 }
 
 // Interfaces
@@ -43,7 +43,7 @@ export interface StakeInfo {
   timeRemaining: number;
   pendingRewards: string;
   multiplier: number;
-  level: string;
+  level: UserLevel;
   levelProgress: number;
   levelBonus: number;
   isActive: boolean;
@@ -56,7 +56,7 @@ export interface ReferralInfo {
   isActive: boolean;
   amount: string;
   since: number;
-  level: string;
+  level: UserLevel;
   rewards: {
     pending: string;
     total: string;
@@ -75,7 +75,7 @@ export interface ReferralLevelInfo {
 
 export interface UserStats {
   totalStaked: string;
-  level: string;
+  level: UserLevel;
   levelProgress: number;
   nextLevelThreshold: string;
   isActive: boolean;
@@ -94,20 +94,20 @@ export interface ReferralData {
 
 // Constants
 const LEVEL_THRESHOLDS = {
-  BRONZE: 0,
-  SILVER: 1_000_000,
-  GOLD: 10_000_000,
-  PLATINUM: 100_000_000
+  [UserLevel.BRONZE]: CONSTANTS.SILVER_THRESHOLD,
+  [UserLevel.SILVER]: CONSTANTS.GOLD_THRESHOLD,
+  [UserLevel.GOLD]: CONSTANTS.PLATINUM_THRESHOLD,
+  [UserLevel.PLATINUM]: CONSTANTS.PLATINUM_THRESHOLD,
 } as const;
 
 const LEVEL_BONUSES = {
-  BRONZE: 0,
-  SILVER: 10,
-  GOLD: 25,
-  PLATINUM: 50
+  [UserLevel.BRONZE]: CONSTANTS.SILVER_BONUS,
+  [UserLevel.SILVER]: CONSTANTS.GOLD_BONUS,
+  [UserLevel.GOLD]: CONSTANTS.PLATINUM_BONUS,
+  [UserLevel.PLATINUM]: CONSTANTS.PLATINUM_BONUS,
 } as const;
 
-const REFERRAL_COMMISSIONS = [15, 8, 5] as const;
+const REFERRAL_COMMISSIONS = CONSTANTS.REFERRAL_COMMISSIONS;
 
 export function useZorium() {
   logger.info('Initializing useZorium hook');
@@ -188,7 +188,8 @@ export function useZorium() {
           lockPeriod: Number(data[2]),
           referrer: data[7],
           referralCount: Number(data[8]),
-          isActive: data[12]
+          isActive: data[12],
+          referrals: data[13] // Масив рефералів
         }
       });
     },
@@ -243,15 +244,17 @@ export function useZorium() {
       setReferralData(newReferralData);
 
       // Clean URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete('ref');
-      window.history.replaceState({}, '', url.pathname);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('ref');
+        window.history.replaceState({}, '', url.pathname);
+      }
       
       logger.info('Saved referral data:', newReferralData);
     } else if (ref) {
       logger.warn('Invalid referrer address detected:', ref);
     }
-  }, [searchParams]);
+  }, [searchParams, setReferralData]);
 
 // Helper functions
   const formatValue = (value: bigint | undefined): string => {
@@ -270,74 +273,73 @@ export function useZorium() {
   };
 
   const calculateLevel = (amount: number): { 
-    level: string; 
+    level: UserLevel; 
     progress: number; 
     next: number 
   } => {
     logger.debug('Calculating level for amount:', amount);
 
-    if (amount >= LEVEL_THRESHOLDS.PLATINUM) {
+    if (amount >= Number(formatEther(CONSTANTS.PLATINUM_THRESHOLD))) {
       logger.debug('PLATINUM level achieved');
       return { 
-        level: 'PLATINUM', 
+        level: UserLevel.PLATINUM, 
         progress: 100, 
-        next: LEVEL_THRESHOLDS.PLATINUM 
+        next: Number(formatEther(CONSTANTS.PLATINUM_THRESHOLD))
       };
     }
 
-    if (amount >= LEVEL_THRESHOLDS.GOLD) {
+    if (amount >= Number(formatEther(CONSTANTS.GOLD_THRESHOLD))) {
       const progress = (
-        (amount - LEVEL_THRESHOLDS.GOLD) / 
-        (LEVEL_THRESHOLDS.PLATINUM - LEVEL_THRESHOLDS.GOLD)
+        (amount - Number(formatEther(CONSTANTS.GOLD_THRESHOLD))) / 
+        (Number(formatEther(CONSTANTS.PLATINUM_THRESHOLD)) - Number(formatEther(CONSTANTS.GOLD_THRESHOLD)))
       ) * 100;
       logger.debug('GOLD level calculated:', { progress });
       return { 
-        level: 'GOLD', 
+        level: UserLevel.GOLD, 
         progress, 
-        next: LEVEL_THRESHOLDS.PLATINUM 
+        next: Number(formatEther(CONSTANTS.PLATINUM_THRESHOLD))
       };
     }
 
-    if (amount >= LEVEL_THRESHOLDS.SILVER) {
+    if (amount >= Number(formatEther(CONSTANTS.SILVER_THRESHOLD))) {
       const progress = (
-        (amount - LEVEL_THRESHOLDS.SILVER) / 
-        (LEVEL_THRESHOLDS.GOLD - LEVEL_THRESHOLDS.SILVER)
+        (amount - Number(formatEther(CONSTANTS.SILVER_THRESHOLD))) / 
+        (Number(formatEther(CONSTANTS.GOLD_THRESHOLD)) - Number(formatEther(CONSTANTS.SILVER_THRESHOLD)))
       ) * 100;
       logger.debug('SILVER level calculated:', { progress });
       return { 
-        level: 'SILVER', 
+        level: UserLevel.SILVER, 
         progress, 
-        next: LEVEL_THRESHOLDS.GOLD 
+        next: Number(formatEther(CONSTANTS.GOLD_THRESHOLD))
       };
     }
 
-    const progress = (amount / LEVEL_THRESHOLDS.SILVER) * 100;
+    const progress = (amount / Number(formatEther(CONSTANTS.SILVER_THRESHOLD))) * 100;
     logger.debug('BRONZE level calculated:', { progress });
     return { 
-      level: 'BRONZE', 
+      level: UserLevel.BRONZE, 
       progress, 
-      next: LEVEL_THRESHOLDS.SILVER 
+      next: Number(formatEther(CONSTANTS.SILVER_THRESHOLD))
     };
   };
 
-  // Додайте це до допоміжних функцій у useZorium.ts
-  const getLevelNumber = (levelString: string): number => {
-    switch(levelString.toUpperCase()) {
-      case 'PLATINUM': return 3;
-      case 'GOLD': return 2;
-      case 'SILVER': return 1;
-      case 'BRONZE':
+  const getLevelNumber = (level: UserLevel): number => {
+    switch(level) {
+      case UserLevel.PLATINUM: return 3;
+      case UserLevel.GOLD: return 2;
+      case UserLevel.SILVER: return 1;
+      case UserLevel.BRONZE:
       default: return 0;
     }
   };
 
-  const getLevelString = (levelNumber: number): string => {
+  const getLevelFromNumber = (levelNumber: ContractUserLevel): UserLevel => {
     switch(levelNumber) {
-      case 3: return 'PLATINUM';
-      case 2: return 'GOLD';
-      case 1: return 'SILVER';
-      case 0:
-      default: return 'BRONZE';
+      case ContractUserLevel.PLATINUM: return UserLevel.PLATINUM;
+      case ContractUserLevel.GOLD: return UserLevel.GOLD;
+      case ContractUserLevel.SILVER: return UserLevel.SILVER;
+      case ContractUserLevel.BRONZE:
+      default: return UserLevel.BRONZE;
     }
   };
 
@@ -355,6 +357,7 @@ export function useZorium() {
       const lockPeriod = Number(info[2]);
       const multiplier = Number(info[3]);
       const lastRewardCalculation = Number(info[4]);
+      const level = getLevelFromNumber(Number(info[5]) as ContractUserLevel);
       const totalHistoricalStake = info[10] as bigint;
       const isActive = info[12] as boolean;
 
@@ -364,6 +367,7 @@ export function useZorium() {
         lockPeriod,
         multiplier,
         lastRewardCalculation,
+        level,
         totalHistoricalStake: totalHistoricalStake.toString(),
         isActive
       });
@@ -385,7 +389,7 @@ export function useZorium() {
 
       const amountNumber = Number(formatValue(amount));
       const levelInfo = calculateLevel(amountNumber);
-      const levelBonus = LEVEL_BONUSES[levelInfo.level as keyof typeof LEVEL_BONUSES] || 0;
+      const levelBonus = LEVEL_BONUSES[levelInfo.level] || 0;
 
       logger.debug('Level calculations:', {
         amountNumber,
@@ -418,7 +422,7 @@ export function useZorium() {
       const referralBonus = formatValue(info[9] as bigint);
       logger.debug('Referral bonus:', referralBonus);
 
-      const processedStake = {
+      const processedStake: StakeInfo = {
         totalAmount: formatValue(amount),
         startTime,
         lockPeriod,
@@ -444,149 +448,135 @@ export function useZorium() {
     }
   };
 
-  // Функція для отримання даних про рефералів
-  const fetchReferralData = async (referrals: string[]): Promise<ReferralInfo[]> => {
-    logger.debug('Fetching referral data for:', referrals);
-    const referralData: ReferralInfo[] = [];
-    
-    for (const referralAddress of referrals) {
-      try {
-        const referralStakeInfo = await readContract({
-          address: ZORIUM_CONTRACT_ADDRESS,
-          abi: ZORIUM_ABI,
-          functionName: 'stakers',
-          args: [referralAddress as `0x${string}`]
-        });
-
-        if (referralStakeInfo) {
-          const amount = formatValue(referralStakeInfo[0] as bigint);
-          const levelInfo = calculateLevel(Number(amount));
-
-          const referralInfo: ReferralInfo = {
-            address: referralAddress as Address,
-            isActive: referralStakeInfo[12] as boolean,
-            amount: amount,
-            since: Number(referralStakeInfo[1]),
-            level: levelInfo.level,
-            rewards: {
-              pending: formatValue(referralStakeInfo[9] as bigint),
-              total: formatValue(referralStakeInfo[11] as bigint),
-              lastUpdate: Number(referralStakeInfo[4])
-            }
-          };
-
-          logger.debug('Processed referral info:', referralInfo);
-          referralData.push(referralInfo);
-        }
-      } catch (error) {
-        logger.error('Error fetching referral data for address:', {
-          address: referralAddress,
-          error
-        });
-      }
-    }
-    
-    return referralData;
-  };
-
-  // Effect for loading referral data
-  useEffect(() => {
-  const loadReferralData = async () => {
-    if (!address || !stakerInfo) {
-      logger.debug('No address or staker info, skipping referral data load');
-      return;
-    }
-    
-    logger.info('Loading referral data for address:', address);
-    setIsLoadingReferrals(true);
+// Функції для обробки рефералів
+  const fetchReferralData = async (referralAddress: string): Promise<ReferralInfo | null> => {
+    logger.debug('Fetching referral data for:', referralAddress);
     
     try {
-      const referralCount = Number(stakerInfo[8] || 0);
-      logger.debug('Referral count:', referralCount);
+      const referralStakeInfo = await readContract({
+        address: ZORIUM_CONTRACT_ADDRESS,
+        abi: ZORIUM_ABI,
+        functionName: 'stakers',
+        args: [referralAddress as `0x${string}`]
+      });
 
-      // Використовуємо безпосередньо дані з stakerInfo для отримання рефералів
-      // За припущенням, що referrals знаходяться в індексі 13
-      const referralAddresses = referralCount > 0 ? (stakerInfo[13] as string[] || []) : [];
-      logger.debug('Raw referrals addresses:', referralAddresses);
+      if (referralStakeInfo) {
+        const amount = formatValue(referralStakeInfo[0] as bigint);
+        const levelInfo = calculateLevel(Number(amount));
+        const contractLevel = Number(referralStakeInfo[5]) as ContractUserLevel;
 
-      if (Array.isArray(referralAddresses) && referralAddresses.length > 0) {
-        const referralDataPromises = referralAddresses.map(async (referralAddress) => {
-          try {
-            const referralStakeInfo = await readContract({
-              address: ZORIUM_CONTRACT_ADDRESS,
-              abi: ZORIUM_ABI,
-              functionName: 'stakers',
-              args: [referralAddress as `0x${string}`]
-            });
-
-            if (referralStakeInfo) {
-              const amount = formatValue(referralStakeInfo[0] as bigint);
-              const levelInfo = calculateLevel(Number(amount));
-
-              const referralInfo: ReferralInfo = {  // Явно вказуємо тип
-                address: referralAddress as Address,
-                isActive: referralStakeInfo[12] as boolean,
-                amount: amount,
-                since: Number(referralStakeInfo[1]),
-                level: levelInfo.level,
-                rewards: {  // Завжди надаємо rewards
-                  pending: formatValue(referralStakeInfo[9] as bigint),
-                  total: formatValue(referralStakeInfo[11] as bigint),
-                  lastUpdate: Number(referralStakeInfo[4])
-                }
-              };
-
-              return referralInfo;
-            }
-            return null;
-          } catch (error) {
-            logger.error('Error fetching referral data for address:', {
-              address: referralAddress,
-              error
-            });
-            return null;
+        const referralInfo: ReferralInfo = {
+          address: referralAddress as Address,
+          isActive: referralStakeInfo[12] as boolean,
+          amount: amount,
+          since: Number(referralStakeInfo[1]),
+          level: getLevelFromNumber(contractLevel),
+          rewards: {
+            pending: formatValue(referralStakeInfo[9] as bigint),
+            total: formatValue(referralStakeInfo[11] as bigint),
+            lastUpdate: Number(referralStakeInfo[4])
           }
-        });
+        };
 
-        const referralData = (await Promise.all(referralDataPromises)).filter((data): data is ReferralInfo => data !== null);
-        logger.debug('Processed referral data:', referralData);
-        
-        setReferralsData(referralData);
-
-        // Обробляємо рівні рефералів
-        const levels = [0, 1, 2].map(levelNumber => {
-          const levelString = getLevelString(levelNumber);
-          const levelReferrals = referralData.filter(r => r.level === levelString);
-          logger.debug(`Level ${levelString} referrals:`, levelReferrals);
-  
-          return {
-            level: levelNumber,
-            count: levelReferrals.length,
-            activeCount: levelReferrals.filter(r => r.isActive).length,
-            totalEarned: levelReferrals.reduce((acc, r) => acc + Number(r.rewards.total || 0), 0).toFixed(2),
-            pendingRewards: levelReferrals.reduce((acc, r) => acc + Number(r.rewards.pending || 0), 0).toFixed(2),
-            commission: 15 - (levelNumber * 7)
-          };
-        });
-        
-        logger.info('Updated referral levels:', levels);
-        setReferralLevels(levels);
-      } else {
-        logger.debug('No referrals found');
-        setReferralsData([]);
-        setReferralLevels([]);
+        logger.debug('Processed referral info:', referralInfo);
+        return referralInfo;
       }
+      return null;
     } catch (error) {
-      logger.error('Error loading referral data', error);
-      setReferralsData([]);
-      setReferralLevels([]);
-    } finally {
-      setIsLoadingReferrals(false);
+      logger.error('Error fetching referral data for address:', {
+        address: referralAddress,
+        error
+      });
+      return null;
     }
   };
 
-  loadReferralData();
-}, [address, stakerInfo]);
+  const processReferralLevels = (referrals: ReferralInfo[]): ReferralLevelInfo[] => {
+    logger.debug('Processing referral levels for', referrals.length, 'referrals');
+
+    const levels = [0, 1, 2].map(levelNumber => {
+      const levelReferrals = referrals.filter(r => getLevelNumber(r.level) === levelNumber);
+      logger.debug(`Processing level ${levelNumber}:`, levelReferrals);
+
+      return {
+        level: levelNumber,
+        count: levelReferrals.length,
+        activeCount: levelReferrals.filter(r => r.isActive).length,
+        totalEarned: levelReferrals
+          .reduce((sum, ref) => sum + Number(ref.rewards.total), 0)
+          .toFixed(2),
+        pendingRewards: levelReferrals
+          .reduce((sum, ref) => sum + Number(ref.rewards.pending), 0)
+          .toFixed(2),
+        commission: CONSTANTS.REFERRAL_COMMISSIONS[levelNumber] || 0
+      };
+    });
+
+    logger.debug('Processed referral levels:', levels);
+    return levels;
+  };
+
+  // Effect для завантаження даних рефералів
+  useEffect(() => {
+    const loadReferralData = async () => {
+      if (!address || !stakerInfo) {
+        logger.debug('No address or staker info, skipping referral data load');
+        return;
+      }
+      
+      logger.info('Loading referral data for address:', address);
+      setIsLoadingReferrals(true);
+      
+      try {
+        const referralCount = Number(stakerInfo[8] || 0);
+        logger.debug('Referral count:', referralCount);
+
+        // Отримуємо масив адрес рефералів з stakerInfo
+        const referralAddresses = stakerInfo[13] as string[] || [];
+        logger.debug('Raw referrals addresses:', referralAddresses);
+
+        if (referralAddresses.length > 0) {
+          // Завантажуємо дані для кожного реферала
+          const referralDataPromises = referralAddresses.map(fetchReferralData);
+          const referralDataResults = await Promise.all(referralDataPromises);
+          const validReferralData = referralDataResults.filter((data): data is ReferralInfo => data !== null);
+
+          logger.debug('Loaded referral data:', validReferralData);
+          setReferralsData(validReferralData);
+
+          // Обробляємо рівні рефералів
+          const levels = processReferralLevels(validReferralData);
+          setReferralLevels(levels);
+
+        } else {
+          logger.debug('No referrals found');
+          setReferralsData([]);
+          setReferralLevels([]);
+        }
+      } catch (error) {
+        logger.error('Error loading referral data', error);
+        setReferralsData([]);
+        setReferralLevels([]);
+      } finally {
+        setIsLoadingReferrals(false);
+      }
+    };
+
+    loadReferralData();
+  }, [address, stakerInfo]);
+
+  // Effect для оновлення при зміні даних рефералів
+  useEffect(() => {
+    const updateReferralStats = () => {
+      if (referralsData.length > 0) {
+        logger.debug('Updating referral stats for', referralsData.length, 'referrals');
+        const newLevels = processReferralLevels(referralsData);
+        setReferralLevels(newLevels);
+      }
+    };
+
+    updateReferralStats();
+  }, [referralsData]);
 
 // Contract writes
   const { writeAsync: stake, data: stakeTx } = useContractWrite({
@@ -632,13 +622,18 @@ export function useZorium() {
       logger.info('Stake transaction successful', { hash: stakeTx?.hash });
       showToast('Successfully staked tokens!', 'success');
 
-      // Referral registration after successful stake
+      // Реєстрація реферера після успішного стейку
       if (referrer && !stakerInfo?.[7]) {
         logger.info('Attempting to register referrer after stake', { referrer });
         try {
-          await registerReferrer({ args: [referrer] });
+          const tx = await registerReferrer({ args: [referrer] });
+          logger.debug('Referral registration transaction:', tx);
           logger.info('Referral registration successful', { referrer });
           showToast('Referral registered successfully', 'success');
+          
+          // Очищаємо дані реферала після успішної реєстрації
+          setReferrer(null);
+          setReferralData(null);
         } catch (error) {
           logger.error('Referral registration error after stake', error);
           showToast('Failed to register referral', 'error');
@@ -650,7 +645,7 @@ export function useZorium() {
         });
       }
       
-      refetchAll();
+      await refetchAll();
     },
     onError: (error) => {
       logger.error('Stake transaction error', error);
@@ -660,10 +655,10 @@ export function useZorium() {
 
   useWaitForTransaction({
     hash: unstakeTx?.hash,
-    onSuccess: () => {
+    onSuccess: async () => {
       logger.info('Unstake transaction successful', { hash: unstakeTx?.hash });
       showToast('Successfully unstaked tokens!', 'success');
-      refetchAll();
+      await refetchAll();
     },
     onError: (error) => {
       logger.error('Unstake transaction error', error);
@@ -673,10 +668,10 @@ export function useZorium() {
 
   useWaitForTransaction({
     hash: claimTx?.hash,
-    onSuccess: () => {
+    onSuccess: async () => {
       logger.info('Claim transaction successful', { hash: claimTx?.hash });
       showToast('Successfully claimed rewards!', 'success');
-      refetchAll();
+      await refetchAll();
     },
     onError: (error) => {
       logger.error('Claim transaction error', error);
@@ -686,13 +681,18 @@ export function useZorium() {
 
   useWaitForTransaction({
     hash: referrerTx?.hash,
-    onSuccess: () => {
+    onSuccess: async () => {
       logger.info('Referrer registration transaction successful', { 
         hash: referrerTx?.hash,
         referrer 
       });
       showToast('Successfully registered referrer!', 'success');
-      refetchAll();
+      
+      // Очищаємо дані реферала після успішної реєстрації
+      setReferrer(null);
+      setReferralData(null);
+      
+      await refetchAll();
     },
     onError: (error) => {
       logger.error('Referrer registration transaction error', error);
@@ -700,60 +700,46 @@ export function useZorium() {
     },
   });
 
-  const refetchAll = useCallback(() => {
+  const refetchAll = async () => {
     logger.debug('Refetching all data');
-    refetchTotalStaked();
-    refetchStakerInfo();
-    refetchRewards();
-  }, [refetchTotalStaked, refetchStakerInfo, refetchRewards]);
-
-  // Security check functions
-  const checkCooldown = async (): Promise<boolean> => {
-    logger.debug('Checking cooldown');
     try {
-      const now = Math.floor(Date.now() / 1000);
-      const lastAction = Number(lastActionTime || 0);
-      const cooldownTime = 3600;
-
-      logger.debug('Cooldown check values:', {
-        now,
-        lastAction,
-        cooldownTime,
-        timeSinceLastAction: now - lastAction
-      });
-
-      if (lastAction + cooldownTime > now) {
-        const waitTime = lastAction + cooldownTime - now;
-        const minutes = Math.ceil(waitTime / 60);
-        logger.warn('Cooldown active:', { waitTime, minutes });
-        showToast(`Please wait ${minutes} minutes before next action`, 'error');
-        return false;
-      }
-
-      logger.debug('Cooldown check passed');
-      return true;
+      await Promise.all([
+        refetchTotalStaked(),
+        refetchStakerInfo(),
+        refetchRewards()
+      ]);
+      logger.debug('All data refetched successfully');
     } catch (error) {
-      logger.error('Cooldown check error', error);
-      return false;
+      logger.error('Error refetching data', error);
     }
   };
 
-  // Action functions
+// Action functions
   const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean> => {
     logger.info('Starting stake process', { amount, periodIndex });
     
     try {
-      // Check cooldown
+      // Перевірка кулдауна
       if (!(await checkCooldown())) {
         logger.warn('Stake blocked by cooldown');
         return false;
       }
 
-      // Get current stats
+      // Перевірка мінімальної суми
+      if (Number(amount) < Number(formatEther(CONSTANTS.MINIMUM_STAKE))) {
+        logger.warn('Amount below minimum stake', {
+          amount,
+          minimum: formatEther(CONSTANTS.MINIMUM_STAKE)
+        });
+        showToast(`Minimum stake amount is ${formatEther(CONSTANTS.MINIMUM_STAKE)} ZRM`, 'error');
+        return false;
+      }
+
+      // Отримання поточної статистики
       const stats = processUserStats();
       logger.debug('Current user stats for stake', { stats });
 
-      // Calculate total pending rewards
+      // Перевірка невиплачених винагород
       const currentPendingRewards = Number(stats?.stakeInfo?.pendingRewards || '0');
       const currentReferralRewards = Number(stats?.stakeInfo?.referralBonus || '0');
       const totalCurrentRewards = currentPendingRewards + currentReferralRewards;
@@ -764,7 +750,6 @@ export function useZorium() {
         totalCurrentRewards
       });
 
-      // Check for unclaimed rewards
       if (totalCurrentRewards > 0) {
         logger.warn('Unclaimed rewards detected', { totalCurrentRewards });
         showToast(
@@ -775,7 +760,7 @@ export function useZorium() {
         return false;
       }
 
-      // Prepare stake transaction
+      // Підготовка транзакції стейкінгу
       logger.info('Preparing stake transaction', {
         parsedAmount: parseEther(amount),
         periodIndex: BigInt(periodIndex)
@@ -857,6 +842,12 @@ export function useZorium() {
         return false;
       }
 
+      if (stats.stakeInfo.isLocked) {
+        logger.warn('Cannot claim while stake is locked');
+        showToast('Cannot claim rewards while stake is locked', 'error');
+        return false;
+      }
+
       const totalRewards = Number(stats.stakeInfo.pendingRewards) + 
                           Number(stats.stakeInfo.referralBonus);
       
@@ -885,28 +876,37 @@ export function useZorium() {
     }
   };
 
-  const registerNewReferrer = async (referrerAddress: string): Promise<boolean> => {
-    logger.info('Starting referrer registration process', { referrerAddress });
-    
+  const checkCooldown = async (): Promise<boolean> => {
+    logger.debug('Checking cooldown');
     try {
-      if (!isAddress(referrerAddress)) {
-        logger.error('Invalid referrer address format', { referrerAddress });
-        throw new Error('Invalid referrer address format');
+      const now = Math.floor(Date.now() / 1000);
+      const lastAction = Number(lastActionTime || 0);
+      const cooldownTime = 3600; // 1 година
+
+      logger.debug('Cooldown check values:', {
+        now,
+        lastAction,
+        cooldownTime,
+        timeSinceLastAction: now - lastAction
+      });
+
+      if (lastAction + cooldownTime > now) {
+        const waitTime = lastAction + cooldownTime - now;
+        const minutes = Math.ceil(waitTime / 60);
+        logger.warn('Cooldown active:', { waitTime, minutes });
+        showToast(`Please wait ${minutes} minutes before next action`, 'error');
+        return false;
       }
 
-      logger.debug('Registering referrer', { referrerAddress });
-      await registerReferrer({ args: [referrerAddress as `0x${string}`] });
-      
-      logger.info('Referrer registration transaction submitted', { referrerAddress });
-      refetchAll();
+      logger.debug('Cooldown check passed');
       return true;
     } catch (error) {
-      logger.error('Register referrer error', error);
-      throw error;
+      logger.error('Cooldown check error', error);
+      return false;
     }
   };
 
-const processUserStats = useCallback((): UserStats | undefined => {
+  const processUserStats = useCallback((): UserStats | undefined => {
     logger.debug('Processing user stats');
     
     if (!stakerInfo) {
@@ -920,13 +920,6 @@ const processUserStats = useCallback((): UserStats | undefined => {
       const levelInfo = calculateLevel(amount);
       const stakeInfo = processStakeInfo(stakerInfo);
 
-      const referralCount = Number(stakerInfo[8]);
-      logger.debug('Processing referral info:', {
-        referralCount,
-        referrer: stakerInfo[7],
-        referrals: referralsData
-      });
-
       const stats: UserStats = {
         totalStaked: amount.toString(),
         level: levelInfo.level,
@@ -934,7 +927,7 @@ const processUserStats = useCallback((): UserStats | undefined => {
         nextLevelThreshold: levelInfo.next.toLocaleString(),
         isActive: stakerInfo[12] as boolean,
         referrer: stakerInfo[7] as Address,
-        referralCount: referralCount,
+        referralCount: Number(stakerInfo[8]),
         referrals: referralsData,
         stakeInfo,
         referralLevels,
@@ -949,67 +942,14 @@ const processUserStats = useCallback((): UserStats | undefined => {
     }
   }, [stakerInfo, referralsData, referralLevels]);
 
-  // Форматування референційних даних для UI
-  const processReferralStats = useCallback(() => {
-    if (!referralsData.length) {
-      logger.debug('No referral data to process');
-      return [];
-    }
-
-    logger.debug('Processing referral statistics', { 
-      totalReferrals: referralsData.length,
-      activeReferrals: referralsData.filter(r => r.isActive).length 
-    });
-
-    const stats = _.chain(referralsData)
-      .groupBy(r => calculateLevel(Number(r.amount)).level)
-      .map((refs, level) => {
-        const activeRefs = refs.filter(r => r.isActive);
-        const totalEarned = refs.reduce((sum, r) => sum + Number(r.rewards?.total || 0), 0);
-        const pendingRewards = refs.reduce((sum, r) => sum + Number(r.rewards?.pending || 0), 0);
-
-        return {
-          level,
-          count: refs.length,
-          activeCount: activeRefs.length,
-          totalEarned: totalEarned.toFixed(2),
-          pendingRewards: pendingRewards.toFixed(2),
-          commission: getReferralCommission(level)
-        };
-      })
-      .value();
-
-    logger.debug('Processed referral stats:', stats);
-    return stats;
-  }, [referralsData]);
-
-  // Отримання комісії для рівня реферала
-  const getReferralCommission = (level: string): number => {
-    switch(level) {
-      case 'PLATINUM':
-      case 'GOLD':
-        return REFERRAL_COMMISSIONS[0];
-      case 'SILVER':
-        return REFERRAL_COMMISSIONS[1];
-      case 'BRONZE':
-      default:
-        return REFERRAL_COMMISSIONS[2];
-    }
-  };
-
-  // Форматування загальної статистики
-  const processGlobalStats = useCallback(() => {
-    return {
-      totalStaked: formatValue(totalStaked as bigint),
-      rewardPool: formatValue(rewardPool as bigint),
-      totalBurned: formatValue(totalBurned as bigint),
-    };
-  }, [totalStaked, rewardPool, totalBurned]);
-
   // Return hook data
   return {
     // Global statistics
-    stats: processGlobalStats(),
+    stats: {
+      totalStaked: formatValue(totalStaked as bigint),
+      rewardPool: formatValue(rewardPool as bigint),
+      totalBurned: formatValue(totalBurned as bigint),
+    },
     
     // User specific data
     userStats: processUserStats(),
@@ -1019,7 +959,15 @@ const processUserStats = useCallback((): UserStats | undefined => {
       stake: stakeTokens,
       unstake: unstakeTokens,
       claim: claimRewards,
-      registerReferrer: registerNewReferrer,
+      registerReferrer: async (referrerAddress: string) => {
+        try {
+          await registerReferrer({ args: [referrerAddress as `0x${string}`] });
+          return true;
+        } catch (error) {
+          logger.error('Register referrer error', error);
+          throw error;
+        }
+      },
     },
     
     // Direct contract interaction

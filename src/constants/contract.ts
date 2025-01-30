@@ -1,6 +1,31 @@
 // Import required types if needed
 import { Address } from 'viem';
 
+// Custom types for better type safety
+export enum UserLevel {
+  BRONZE = 0,
+  SILVER = 1,
+  GOLD = 2,
+  PLATINUM = 3
+}
+
+export interface StakeInfo {
+  amount: bigint;
+  since: bigint;
+  lockPeriod: bigint;
+  multiplier: bigint;
+  lastRewardCalculation: bigint;
+  level: UserLevel;
+  levelUpdated: bigint;
+  referrer: Address;
+  referralCount: bigint;
+  referralBonus: bigint;
+  totalHistoricalStake: bigint;
+  totalHistoricalRewards: bigint;
+  isActive: boolean;
+  referrals: Address[];
+}
+
 // Contract address with proper typing for wagmi/viem
 export const ZORIUM_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
@@ -137,8 +162,91 @@ export const ZORIUM_ABI = [
     "outputs": [{ "type": "uint256", "name": "" }],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "referrer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "referee",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "referrerStake",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "depth",
+        "type": "uint256"
+      }
+    ],
+    "name": "ReferralRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "referrer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "referee",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "totalHistorical",
+        "type": "uint256"
+      }
+    ],
+    "name": "ReferralRewardUpdated",
+    "type": "event"
   }
 ] as const;
 
+// Constants from contract
+const TEN_18 = BigInt('1000000000000000000'); // 10^18
+
+export const CONSTANTS = {
+  MINIMUM_STAKE: BigInt(100) * TEN_18,
+  SILVER_THRESHOLD: BigInt(1_000_000) * TEN_18,
+  GOLD_THRESHOLD: BigInt(10_000_000) * TEN_18,
+  PLATINUM_THRESHOLD: BigInt(100_000_000) * TEN_18,
+  SILVER_BONUS: 10,
+  GOLD_BONUS: 25,
+  PLATINUM_BONUS: 50,
+  REFERRAL_COMMISSIONS: [15, 8, 5] as const
+} as const;
+
 // Optional: Export contract types for better type safety
 export type ZoriumContract = typeof ZORIUM_ABI;
+
+// Helper types for events
+export interface ReferralRegisteredEvent {
+  referrer: Address;
+  referee: Address;
+  referrerStake: bigint;
+  depth: bigint;
+}
+
+export interface ReferralRewardUpdatedEvent {
+  referrer: Address;
+  referee: Address;
+  amount: bigint;
+  totalHistorical: bigint;
+}
