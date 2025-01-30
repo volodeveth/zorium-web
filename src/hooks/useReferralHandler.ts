@@ -1,6 +1,5 @@
-// src/hooks/useReferralHandler.ts
-import { useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useLocalStorage } from './useLocalStorage';
 import { Address } from 'viem';
 
@@ -11,90 +10,71 @@ interface ReferralData {
 
 export function useReferralHandler() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const router = useRouter();
   const [referralData, setReferralData] = useLocalStorage<ReferralData | null>('zorium_referral', null);
+  const [initialized, setInitialized] = useState(false);
   
   useEffect(() => {
+    if (initialized) return;
+    
     try {
       console.log('[REFERRAL] Starting referral handler effect');
-      // Спочатку виводимо всі search параметри
-      console.log('[REFERRAL] Search params:', searchParams?.toString());
-
-      const currentUrl = window.location.href;
-      console.log('[REFERRAL] Current URL:', currentUrl);
-
-      const ref = searchParams?.get('ref');
+      
+      // Отримуємо всі параметри URL
+      const params = new URLSearchParams(window.location.search);
+      console.log('[REFERRAL] Full URL params:', params.toString());
+      
+      const ref = params.get('ref') || searchParams?.get('ref');
       console.log('[REFERRAL] Raw ref parameter:', ref);
 
       const now = Date.now();
       const REFERRAL_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
-      console.log('[REFERRAL] Current state:', {
-        referralData,
-        now,
-        REFERRAL_EXPIRY
-      });
-
-      // Перевірка і очищення застарілих реферальних даних
+      // Перевірка існуючих даних
       if (referralData) {
-        console.log('[REFERRAL] Checking existing referral:', {
-          referrer: referralData.referrer,
-          timestamp: referralData.timestamp,
-          age: now - referralData.timestamp
-        });
-
+        console.log('[REFERRAL] Existing referral data:', referralData);
         if (now - referralData.timestamp > REFERRAL_EXPIRY) {
-          console.log('[REFERRAL] Clearing expired referral');
+          console.log('[REFERRAL] Clearing expired referral data');
           setReferralData(null);
+        } else {
+          console.log('[REFERRAL] Using existing valid referral data');
           return;
         }
       }
 
-      // Збереження нового реферера
+      // Обробка нового реферального параметру
       if (ref) {
         console.log('[REFERRAL] Processing new referral:', ref);
         
         const isValidAddress = ref.length === 42 && ref.startsWith('0x');
-        console.log('[REFERRAL] Address validation:', {
-          isValid: isValidAddress,
-          length: ref.length,
-          startsWithHex: ref.startsWith('0x')
-        });
+        console.log('[REFERRAL] Address validation:', { isValid: isValidAddress, address: ref });
 
-        if (isValidAddress && !referralData) {
+        if (isValidAddress) {
           const newReferralData = {
             referrer: ref as Address,
             timestamp: now
           };
-          console.log('[REFERRAL] Saving new referral:', newReferralData);
-          
+          console.log('[REFERRAL] Saving new referral data:', newReferralData);
           setReferralData(newReferralData);
 
-          // Очищаємо URL
-          const url = new URL(window.location.href);
-          url.searchParams.delete('ref');
-          window.history.replaceState({}, '', url.toString());
-          console.log('[REFERRAL] URL cleaned:', url.toString());
-        } else {
-          console.log('[REFERRAL] Skipping referral save:', {
-            isValidAddress,
-            hasExistingData: !!referralData
-          });
+          // Очищаємо URL від параметра ref
+          const newParams = new URLSearchParams(params);
+          newParams.delete('ref');
+          const newUrl = `${pathname}${newParams.toString() ? `?${newParams.toString()}` : ''}`;
+          router.replace(newUrl, { scroll: false });
+          
+          console.log('[REFERRAL] Updated URL:', newUrl);
+          setInitialized(true);
         }
       }
     } catch (error) {
-      console.error('[REFERRAL] Error in referral handler:', error);
-      console.error('[REFERRAL] Error details:', {
-        searchParams: searchParams?.toString(),
-        currentData: referralData
-      });
+      console.error('[REFERRAL] Error processing referral:', error);
     }
-  }, [searchParams, referralData, setReferralData]);
+  }, [searchParams, pathname, referralData, initialized]);
 
-  // Розрахунок часу, що залишився
   const getTimeRemaining = () => {
     if (!referralData) {
-      console.log('[REFERRAL] No active referral data for time calculation');
       return 0;
     }
 
@@ -102,9 +82,8 @@ export function useReferralHandler() {
     const now = Date.now();
     const timeLeft = (referralData.timestamp + REFERRAL_EXPIRY) - now;
     
-    console.log('[REFERRAL] Time remaining calculation:', {
-      expiryTime: referralData.timestamp + REFERRAL_EXPIRY,
-      currentTime: now,
+    console.log('[REFERRAL] Time remaining:', {
+      expiryTime: new Date(referralData.timestamp + REFERRAL_EXPIRY).toISOString(),
       timeLeft: Math.max(0, timeLeft)
     });
 
@@ -114,6 +93,7 @@ export function useReferralHandler() {
   const clearReferral = () => {
     console.log('[REFERRAL] Clearing referral data');
     setReferralData(null);
+    setInitialized(false);
   };
 
   const returnData = {
