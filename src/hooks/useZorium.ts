@@ -5,6 +5,7 @@ import { parseEther, formatEther, isAddress, Address } from 'viem';
 import { useState, useCallback, useEffect } from 'react';
 import { useToast } from './useToast';
 import { useSearchParams } from 'next/navigation';
+import { useLocalStorage } from './useLocalStorage';
 
 // Debug logger
 const logger = {
@@ -84,6 +85,11 @@ export interface UserStats {
   totalHistoricalStake?: string;
 }
 
+export interface ReferralData {
+  referrer: string;
+  timestamp: number;
+}
+
 // Constants
 const LEVEL_THRESHOLDS = {
   BRONZE: 0,
@@ -115,18 +121,34 @@ export function useZorium() {
   const [referralLevels, setReferralLevels] = useState<ReferralLevelInfo[]>([]);
   const [referrer, setReferrer] = useState<Address | null>(null);
   const [showWarningModal, setShowWarningModal] = useState(false);
+  const [referralData, setReferralData] = useLocalStorage<ReferralData | null>('zorium_referral', null);
+
 
   useEffect(() => {
-    const ref = searchParams.get('ref');
-    logger.debug('Referral parameter detected:', ref);
+  const ref = searchParams.get('ref');
+  logger.debug('Referral parameter detected:', ref);
+  
+  if (ref && isAddress(ref)) {
+    logger.info('Setting valid referrer address:', ref);
+    setReferrer(ref as Address);
     
-    if (ref && isAddress(ref)) {
-      logger.info('Setting valid referrer address:', ref);
-      setReferrer(ref as Address);
-    } else if (ref) {
-      logger.warn('Invalid referrer address detected:', ref);
-    }
-  }, [searchParams]);
+    // Зберігаємо в localStorage
+    const newReferralData = {
+      referrer: ref as Address,
+      timestamp: Date.now()
+    };
+    setReferralData(newReferralData);
+
+    // Очищаємо URL
+    const url = new URL(window.location.href);
+    url.searchParams.delete('ref');
+    window.history.replaceState({}, '', url.pathname);
+    
+    logger.info('Saved referral data:', newReferralData);
+  } else if (ref) {
+    logger.warn('Invalid referrer address detected:', ref);
+  }
+}, [searchParams]);
 
   // Helper functions
   const formatValue = (value: bigint | undefined): string => {
