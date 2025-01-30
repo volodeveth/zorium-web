@@ -1,3 +1,4 @@
+// src/hooks/useReferralHandler.ts
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useLocalStorage } from './useLocalStorage';
@@ -15,85 +16,99 @@ export function useReferralHandler() {
   const [referralData, setReferralData] = useLocalStorage<ReferralData | null>('zorium_referral', null);
   const [initialized, setInitialized] = useState(false);
   
+  // Ефект для першого завантаження
   useEffect(() => {
-    if (initialized) return;
-    
-    try {
-      console.log('[REFERRAL] Starting referral handler effect');
-      
-      // Отримуємо всі параметри URL
-      const params = new URLSearchParams(window.location.search);
-      console.log('[REFERRAL] Full URL params:', params.toString());
-      
-      const ref = params.get('ref') || searchParams?.get('ref');
-      console.log('[REFERRAL] Raw ref parameter:', ref);
-
-      const now = Date.now();
-      const REFERRAL_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
-
-      // Перевірка існуючих даних
-      if (referralData) {
-        console.log('[REFERRAL] Existing referral data:', referralData);
-        if (now - referralData.timestamp > REFERRAL_EXPIRY) {
-          console.log('[REFERRAL] Clearing expired referral data');
-          setReferralData(null);
-        } else {
-          console.log('[REFERRAL] Using existing valid referral data');
-          return;
-        }
-      }
-
-      // Обробка нового реферального параметру
-      if (ref) {
-        console.log('[REFERRAL] Processing new referral:', ref);
+    const checkAndSetReferral = () => {
+      try {
+        console.log('[REFERRAL] Checking URL on initial load');
         
-        const isValidAddress = ref.length === 42 && ref.startsWith('0x');
-        console.log('[REFERRAL] Address validation:', { isValid: isValidAddress, address: ref });
+        // Отримуємо ref з URLSearchParams
+        const urlParams = new URLSearchParams(window.location.search);
+        const refFromUrl = urlParams.get('ref');
+        
+        console.log('[REFERRAL] Initial URL check:', { 
+          fullUrl: window.location.href,
+          search: window.location.search,
+          refFromUrl
+        });
 
-        if (isValidAddress) {
-          const newReferralData = {
-            referrer: ref as Address,
-            timestamp: now
-          };
-          console.log('[REFERRAL] Saving new referral data:', newReferralData);
-          setReferralData(newReferralData);
+        if (refFromUrl) {
+          const isValidAddress = refFromUrl.length === 42 && refFromUrl.startsWith('0x');
+          console.log('[REFERRAL] Found ref parameter:', {
+            ref: refFromUrl,
+            isValid: isValidAddress
+          });
 
-          // Очищаємо URL від параметра ref
-          const newParams = new URLSearchParams(params);
-          newParams.delete('ref');
-          const newUrl = `${pathname}${newParams.toString() ? `?${newParams.toString()}` : ''}`;
-          router.replace(newUrl, { scroll: false });
-          
-          console.log('[REFERRAL] Updated URL:', newUrl);
-          setInitialized(true);
+          if (isValidAddress && !referralData) {
+            const newReferralData = {
+              referrer: refFromUrl as Address,
+              timestamp: Date.now()
+            };
+            console.log('[REFERRAL] Setting new referral data:', newReferralData);
+            setReferralData(newReferralData);
+            
+            // Очищаємо URL
+            const cleanUrl = window.location.pathname;
+            console.log('[REFERRAL] Cleaning URL to:', cleanUrl);
+            window.history.replaceState({}, '', cleanUrl);
+          }
+        } else {
+          console.log('[REFERRAL] No ref parameter found in URL');
         }
+      } catch (error) {
+        console.error('[REFERRAL] Error during initial URL check:', error);
       }
-    } catch (error) {
-      console.error('[REFERRAL] Error processing referral:', error);
+    };
+
+    // Виконуємо перевірку тільки один раз при першому завантаженні
+    if (!initialized) {
+      console.log('[REFERRAL] Running initial check');
+      checkAndSetReferral();
+      setInitialized(true);
     }
-  }, [searchParams, pathname, referralData, initialized]);
+  }, [initialized]);
+
+  // Ефект для перевірки терміну дії
+  useEffect(() => {
+    if (!referralData) return;
+
+    const REFERRAL_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+    const now = Date.now();
+    
+    console.log('[REFERRAL] Checking expiry for:', {
+      referrer: referralData.referrer,
+      timestamp: new Date(referralData.timestamp).toISOString(),
+      age: now - referralData.timestamp,
+      expiry: REFERRAL_EXPIRY
+    });
+
+    if (now - referralData.timestamp > REFERRAL_EXPIRY) {
+      console.log('[REFERRAL] Clearing expired referral data');
+      setReferralData(null);
+    }
+  }, [referralData]);
 
   const getTimeRemaining = () => {
     if (!referralData) {
+      console.log('[REFERRAL] No active referral for time calculation');
       return 0;
     }
 
     const REFERRAL_EXPIRY = 24 * 60 * 60 * 1000;
     const now = Date.now();
-    const timeLeft = (referralData.timestamp + REFERRAL_EXPIRY) - now;
-    
-    console.log('[REFERRAL] Time remaining:', {
+    const timeLeft = Math.max(0, (referralData.timestamp + REFERRAL_EXPIRY) - now);
+
+    console.log('[REFERRAL] Time remaining calculation:', {
       expiryTime: new Date(referralData.timestamp + REFERRAL_EXPIRY).toISOString(),
-      timeLeft: Math.max(0, timeLeft)
+      timeLeft
     });
 
-    return Math.max(0, timeLeft);
+    return timeLeft;
   };
 
   const clearReferral = () => {
-    console.log('[REFERRAL] Clearing referral data');
+    console.log('[REFERRAL] Manually clearing referral data');
     setReferralData(null);
-    setInitialized(false);
   };
 
   const returnData = {
@@ -104,6 +119,6 @@ export function useReferralHandler() {
     clearReferral
   };
 
-  console.log('[REFERRAL] Hook return data:', returnData);
+  console.log('[REFERRAL] Current state:', returnData);
   return returnData;
 }
