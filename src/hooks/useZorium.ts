@@ -233,28 +233,31 @@ export function useZorium() {
     logger.debug('Referral parameter detected:', ref);
     
     if (ref && isAddress(ref)) {
-      logger.info('Setting valid referrer address:', ref);
-      setReferrer(ref as Address);
-      
-      // Save to localStorage
-      const newReferralData = {
-        referrer: ref as Address,
-        timestamp: Date.now()
-      };
-      setReferralData(newReferralData);
+        logger.info('Setting valid referrer address:', ref);
+        setReferrer(ref as Address);
+        
+        // Save to localStorage
+        const newReferralData = {
+            referrer: ref as Address,
+            timestamp: Date.now()
+        };
+        setReferralData(newReferralData);
 
-      // Clean URL
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('ref');
-        window.history.replaceState({}, '', url.pathname);
-      }
-      
-      logger.info('Saved referral data:', newReferralData);
+        // Замість видалення параметра, зберігаємо стан
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            // Не видаляємо параметр одразу
+            setTimeout(() => {
+                url.searchParams.delete('ref');
+                window.history.replaceState({}, '', url.pathname);
+            }, 100); // Невелика затримка для завершення навігації
+        }
+        
+        logger.info('Saved referral data:', newReferralData);
     } else if (ref) {
-      logger.warn('Invalid referrer address detected:', ref);
+        logger.warn('Invalid referrer address detected:', ref);
     }
-  }, [searchParams, setReferralData]);
+}, [searchParams, setReferralData]);
 
 // Helper functions
   const formatValue = (value: bigint | undefined): string => {
