@@ -13,25 +13,53 @@ export default function LayoutClient({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const ref = searchParams.get('ref');
     if (ref) {
-      setIsTransitioning(true);
-      // Даємо час для обробки реферального параметра
-      setTimeout(() => {
-        setIsTransitioning(false);
-      }, 200);
+      setIsLoading(true);
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 1500); // Даємо час на обробку реферального параметра
+      return () => {
+        clearTimeout(timer);
+        setIsLoading(false);
+      };
+    } else {
+      setIsLoading(false);
     }
   }, [searchParams]);
+
+  // Додатковий ефект для відстеження зміни pathname
+  useEffect(() => {
+    if (pathname && isLoading) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [pathname]);
+
+  // Обробка монтування компонента
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="relative flex min-h-screen flex-col">
       <Header />
       <main className="flex-1 mt-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          {!isTransitioning && (
+          {isLoading ? (
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : (
             <PageTransition>{children}</PageTransition>
           )}
         </div>

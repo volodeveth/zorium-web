@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { Address } from 'viem';
 
@@ -9,6 +9,7 @@ interface ReferralData {
 
 export function useReferralHandler() {
   const [referralData, setReferralData] = useLocalStorage<ReferralData | null>('zorium_referral', null);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const getTimeRemaining = () => {
     if (!referralData) {
@@ -30,8 +31,9 @@ export function useReferralHandler() {
 
   // Перевіряємо термін дії
   useEffect(() => {
-    if (!referralData) return;
+    if (!referralData || isProcessing) return;
 
+    setIsProcessing(true);
     const REFERRAL_EXPIRY = 24 * 60 * 60 * 1000;
     const now = Date.now();
     
@@ -45,20 +47,33 @@ export function useReferralHandler() {
     if (now - referralData.timestamp > REFERRAL_EXPIRY) {
       console.log('[REFERRAL] Clearing expired referral');
       setReferralData(null);
+      localStorage.removeItem('processed_ref');
     }
-  }, [referralData]);
+    setIsProcessing(false);
+  }, [referralData, setReferralData]);
 
   const clearReferral = () => {
     console.log('[REFERRAL] Manual clear');
     setReferralData(null);
+    localStorage.removeItem('processed_ref');
   };
+
+  // Очищення при розмонтуванні
+  useEffect(() => {
+    return () => {
+      if (isProcessing) {
+        setIsProcessing(false);
+      }
+    };
+  }, []);
 
   const returnData = {
     referrer: referralData?.referrer || null,
     timeRemaining: getTimeRemaining(),
     hasActiveReferral: Boolean(referralData?.referrer),
     expiryTimestamp: referralData ? referralData.timestamp + (24 * 60 * 60 * 1000) : null,
-    clearReferral
+    clearReferral,
+    isProcessing
   };
 
   console.log('[REFERRAL] Current state:', returnData);

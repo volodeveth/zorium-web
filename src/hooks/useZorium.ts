@@ -232,7 +232,10 @@ export function useZorium() {
     const ref = searchParams.get('ref');
     logger.debug('Referral parameter detected:', ref);
     
-    if (ref && isAddress(ref)) {
+    // Перевіряємо, чи не обробляли ми вже цей реферальний код
+    const processedRef = localStorage.getItem('processed_ref');
+    
+    if (ref && isAddress(ref) && processedRef !== ref) {
         logger.info('Setting valid referrer address:', ref);
         setReferrer(ref as Address);
         
@@ -242,22 +245,37 @@ export function useZorium() {
             timestamp: Date.now()
         };
         setReferralData(newReferralData);
-
-        // Замість видалення параметра, зберігаємо стан
-        if (typeof window !== 'undefined') {
-            const url = new URL(window.location.href);
-            // Не видаляємо параметр одразу
-            setTimeout(() => {
+        
+        // Зберігаємо оброблений реферальний код
+        localStorage.setItem('processed_ref', ref);
+        
+        // Затримка очищення URL
+        setTimeout(() => {
+            if (typeof window !== 'undefined' && window.location.search.includes('ref=')) {
+                const url = new URL(window.location.href);
                 url.searchParams.delete('ref');
-                window.history.replaceState({}, '', url.pathname);
-            }, 100); // Невелика затримка для завершення навігації
-        }
+                window.history.replaceState({}, '', url.pathname + url.hash);
+            }
+        }, 1000);
         
         logger.info('Saved referral data:', newReferralData);
     } else if (ref) {
-        logger.warn('Invalid referrer address detected:', ref);
+        if (!isAddress(ref)) {
+            logger.warn('Invalid referrer address detected:', ref);
+        } else if (processedRef === ref) {
+            logger.debug('Referral code already processed:', ref);
+        }
     }
-}, [searchParams, setReferralData]);
+}, [searchParams]);
+
+    // Додайте ефект очищення обробленого рефа при розмонтуванні
+    useEffect(() => {
+        return () => {
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('processed_ref');
+            }
+        };
+    }, []);
 
 // Helper functions
   const formatValue = (value: bigint | undefined): string => {
