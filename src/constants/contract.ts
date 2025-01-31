@@ -23,7 +23,7 @@ export interface StakeInfo {
   totalHistoricalStake: bigint;
   totalHistoricalRewards: bigint;
   isActive: boolean;
-  referrals: Address[];
+  referrals: `0x${string}`[];
 }
 
 // Contract address with proper typing for wagmi/viem

@@ -364,115 +364,87 @@ export function useZorium() {
     }
   };
 
-  const processStakeInfo = (info: any): StakeInfo | null => {
-    logger.debug('Processing stake info:', info);
+  const processStakeInfo = async (info: any): Promise<StakeInfo | null> => {
+  logger.debug('Processing stake info:', info);
 
-    if (!info) {
-      logger.info('No staker info available');
+  if (!info || !Array.isArray(info)) {
+    logger.info('No valid staker info available');
+    return null;
+  }
+
+  try {
+    // Розпаковуємо значення з масиву з перевірками
+    const [
+      amount,
+      startTime,
+      lockPeriod,
+      multiplier,
+      lastRewardCalculation,
+      level,
+      levelUpdated,
+      referrer,
+      referralCount,
+      referralBonus,
+      totalHistoricalStake,
+      totalHistoricalRewards,
+      isActive,
+      referrals
+    ] = info;
+
+    if (!amount || amount === BigInt(0)) {
+      logger.info('Zero or invalid stake amount detected');
       return null;
     }
 
-    try {
-      const amount = info[0] as bigint;
-      const startTime = Number(info[1]);
-      const lockPeriod = Number(info[2]);
-      const multiplier = Number(info[3]);
-      const lastRewardCalculation = Number(info[4]);
-      const level = getLevelFromNumber(Number(info[5]) as ContractUserLevel);
-      const totalHistoricalStake = info[10] as bigint;
-      const isActive = info[12] as boolean;
+    const now = Math.floor(Date.now() / 1000);
+    const startTimeNum = Number(startTime || 0);
+    const lockPeriodNum = Number(lockPeriod || 0);
+    const unlockTime = startTimeNum + lockPeriodNum;
+    const timeRemaining = unlockTime - now;
 
-      logger.debug('Raw stake values:', {
-        amount: amount.toString(),
-        startTime,
-        lockPeriod,
-        multiplier,
-        lastRewardCalculation,
-        level,
-        totalHistoricalStake: totalHistoricalStake.toString(),
-        isActive
-      });
+    const amountNumber = Number(formatValue(amount as bigint));
+    const levelInfo = calculateLevel(amountNumber);
+    const levelBonus = LEVEL_BONUSES[levelInfo.level] || 0;
 
-      if (amount <= BigInt(0)) {
-        logger.info('Zero or negative stake amount detected');
-        return null;
-      }
+    // Оновлений розрахунок винагород
+    const baseAnnualReward = amountNumber * 0.05;
+    const periodMultiplier = Number(multiplier || 0) / 100;
+    const withPeriodBonus = baseAnnualReward * periodMultiplier;
+    const withLevelBonus = withPeriodBonus * (1 + levelBonus / 100);
 
-      const now = Math.floor(Date.now() / 1000);
-      const unlockTime = startTime + lockPeriod;
-      const timeRemaining = unlockTime - now;
+    const daysSinceLastCalculation = (now - Number(lastRewardCalculation || 0)) / (24 * 60 * 60);
+    const proRatedRewards = withLevelBonus * (daysSinceLastCalculation / 365);
 
-      logger.debug('Time calculations:', {
-        now,
-        unlockTime,
-        timeRemaining
-      });
+    const processedStake: StakeInfo = {
+      totalAmount: formatValue(amount as bigint),
+      startTime: startTimeNum,
+      lockPeriod: lockPeriodNum,
+      multiplier: Number(multiplier || 0),
+      unlockTime,
+      isLocked: timeRemaining > 0,
+      timeRemaining: Math.max(0, timeRemaining),
+      pendingRewards: proRatedRewards.toFixed(2),
+      level: levelInfo.level,
+      levelProgress: levelInfo.progress,
+      levelBonus,
+      isActive: Boolean(isActive),
+      referralBonus: formatValue(referralBonus as bigint),
+      totalHistoricalStake: formatValue(totalHistoricalStake as bigint)
+    };
 
-      const amountNumber = Number(formatValue(amount));
-      const levelInfo = calculateLevel(amountNumber);
-      const levelBonus = LEVEL_BONUSES[levelInfo.level] || 0;
+    logger.debug('Processed stake info:', processedStake);
+    return processedStake;
 
-      logger.debug('Level calculations:', {
-        amountNumber,
-        level: levelInfo.level,
-        levelBonus
-      });
-
-      // Reward calculations
-      const baseAnnualReward = amountNumber * 0.05;
-      const periodMultiplier = multiplier / 100;
-      const withPeriodBonus = baseAnnualReward * periodMultiplier;
-      const withLevelBonus = withPeriodBonus * (1 + levelBonus / 100);
-
-      logger.debug('Reward calculations:', {
-        baseAnnualReward,
-        periodMultiplier,
-        withPeriodBonus,
-        withLevelBonus
-      });
-
-      const yearInDays = 365;
-      const daysSinceLastCalculation = (now - lastRewardCalculation) / (24 * 60 * 60);
-      const proRatedRewards = withLevelBonus * (daysSinceLastCalculation / yearInDays);
-
-      logger.debug('Pro-rated rewards:', {
-        daysSinceLastCalculation,
-        proRatedRewards
-      });
-
-      const referralBonus = formatValue(info[9] as bigint);
-      logger.debug('Referral bonus:', referralBonus);
-
-      const processedStake: StakeInfo = {
-        totalAmount: formatValue(amount),
-        startTime,
-        lockPeriod,
-        multiplier,
-        unlockTime,
-        isLocked: timeRemaining > 0,
-        timeRemaining: timeRemaining > 0 ? timeRemaining : 0,
-        pendingRewards: proRatedRewards.toFixed(2),
-        level: levelInfo.level,
-        levelProgress: levelInfo.progress,
-        levelBonus,
-        isActive: true,
-        referralBonus,
-        totalHistoricalStake: formatValue(totalHistoricalStake)
-      };
-
-      logger.debug('Processed stake info:', processedStake);
-      return processedStake;
-
-    } catch (error) {
-      logger.error('Error processing stake info', error);
-      return null;
-    }
-  };
+  } catch (error) {
+    logger.error('Error processing stake info', error);
+    return null;
+  }
+};
 
 // Функції для обробки рефералів
   const fetchReferralData = async (referralAddress: string): Promise<ReferralInfo | null> => {
     logger.debug('Fetching referral data for:', referralAddress);
-    
+  
     try {
       const referralStakeInfo = await readContract({
         address: ZORIUM_CONTRACT_ADDRESS,
@@ -481,21 +453,36 @@ export function useZorium() {
         args: [referralAddress as `0x${string}`]
       });
 
-      if (referralStakeInfo) {
-        const amount = formatValue(referralStakeInfo[0] as bigint);
-        const levelInfo = calculateLevel(Number(amount));
-        const contractLevel = Number(referralStakeInfo[5]) as ContractUserLevel;
+      if (referralStakeInfo && Array.isArray(referralStakeInfo)) {
+        const [
+          amount,
+          since,
+          _lockPeriod,
+          _multiplier,
+          lastRewardCalculation,
+          level,
+          _levelUpdated,
+          _referrer,
+          _referralCount,
+          referralBonus,
+          _totalHistoricalStake,
+          totalHistoricalRewards,
+          isActive
+        ] = referralStakeInfo;
+
+        const formattedAmount = formatValue(amount as bigint);
+        const levelInfo = calculateLevel(Number(formattedAmount));
 
         const referralInfo: ReferralInfo = {
           address: referralAddress as Address,
-          isActive: referralStakeInfo[12] as boolean,
-          amount: amount,
-          since: Number(referralStakeInfo[1]),
-          level: getLevelFromNumber(contractLevel),
+          isActive: Boolean(isActive),
+          amount: formattedAmount,
+          since: Number(since),
+          level: getLevelFromNumber(Number(level) as ContractUserLevel),
           rewards: {
-            pending: formatValue(referralStakeInfo[9] as bigint),
-            total: formatValue(referralStakeInfo[11] as bigint),
-            lastUpdate: Number(referralStakeInfo[4])
+            pending: formatValue(referralBonus as bigint),
+            total: formatValue(totalHistoricalRewards as bigint),
+            lastUpdate: Number(lastRewardCalculation)
           }
         };
 
@@ -737,33 +724,39 @@ export function useZorium() {
 
 // Action functions
   const stakeTokens = async (amount: string, periodIndex: number): Promise<boolean> => {
-    logger.info('Starting stake process', { amount, periodIndex });
+      logger.info('Starting stake process', { amount, periodIndex });
     
-    try {
-      // Перевірка кулдауна
-      if (!(await checkCooldown())) {
-        logger.warn('Stake blocked by cooldown');
-        return false;
-      }
+      try {
+        // Перевірка кулдауна
+        if (!(await checkCooldown())) {
+          logger.warn('Stake blocked by cooldown');
+          return false;
+        }
 
-      // Перевірка мінімальної суми
-      if (Number(amount) < Number(formatEther(CONSTANTS.MINIMUM_STAKE))) {
-        logger.warn('Amount below minimum stake', {
-          amount,
-          minimum: formatEther(CONSTANTS.MINIMUM_STAKE)
-        });
-        showToast(`Minimum stake amount is ${formatEther(CONSTANTS.MINIMUM_STAKE)} ZRM`, 'error');
-        return false;
-      }
+        // Перевірка мінімальної суми
+        if (Number(amount) < Number(formatEther(CONSTANTS.MINIMUM_STAKE))) {
+          logger.warn('Amount below minimum stake', {
+            amount,
+            minimum: formatEther(CONSTANTS.MINIMUM_STAKE)
+          });
+          showToast(`Minimum stake amount is ${formatEther(CONSTANTS.MINIMUM_STAKE)} ZRM`, 'error');
+          return false;
+        }
 
-      // Отримання поточної статистики
-      const stats = processUserStats();
-      logger.debug('Current user stats for stake', { stats });
+        // Отримання поточної статистики
+        const stats = await processUserStats();
+        logger.debug('Current user stats for stake', { stats });
 
-      // Перевірка невиплачених винагород
-      const currentPendingRewards = Number(stats?.stakeInfo?.pendingRewards || '0');
-      const currentReferralRewards = Number(stats?.stakeInfo?.referralBonus || '0');
-      const totalCurrentRewards = currentPendingRewards + currentReferralRewards;
+        if (!stats) {
+          logger.warn('Failed to get user stats');
+          showToast('Failed to get user stats', 'error');
+          return false;
+        }
+
+        // Перевірка невиплачених винагород
+        const currentPendingRewards = Number(stats.stakeInfo?.pendingRewards || '0');
+        const currentReferralRewards = Number(stats.stakeInfo?.referralBonus || '0');
+        const totalCurrentRewards = currentPendingRewards + currentReferralRewards;
 
       logger.debug('Pending rewards check', {
         currentPendingRewards,
@@ -812,10 +805,16 @@ export function useZorium() {
         return false;
       }
 
-      const stats = processUserStats();
+      const stats = await processUserStats();
       logger.debug('Current user stats for unstake', { stats });
 
-      if (!stats?.stakeInfo?.isActive) {
+      if (!stats) {
+        logger.warn('Failed to get user stats');
+        showToast('Failed to get user stats', 'error');
+        return false;
+      }
+
+      if (!stats.stakeInfo?.isActive) {
         logger.warn('No active stake found for unstake');
         showToast('No active stake found', 'error');
         return false;
@@ -854,10 +853,16 @@ export function useZorium() {
         return false;
       }
 
-      const stats = processUserStats();
+      const stats = await processUserStats();
       logger.debug('Current user stats for claim', { stats });
 
-      if (!stats?.stakeInfo?.isActive) {
+      if (!stats) {
+        logger.warn('Failed to get user stats');
+        showToast('Failed to get user stats', 'error');
+        return false;
+      }
+
+      if (!stats.stakeInfo?.isActive) {
         logger.warn('No active stake found for claim');
         showToast('No active stake found', 'error');
         return false;
@@ -927,42 +932,57 @@ export function useZorium() {
     }
   };
 
-  const processUserStats = useCallback((): UserStats | undefined => {
-    logger.debug('Processing user stats');
+  const processUserStats = useCallback(async (): Promise<UserStats | undefined> => {
+      logger.debug('Processing user stats');
     
-    if (!stakerInfo) {
-      logger.info('No staker info available for stats processing');
-      return undefined;
-    }
+      if (!stakerInfo) {
+        logger.info('No staker info available for stats processing');
+        return undefined;
+      }
 
-    try {
-      const amount = Number(formatValue(stakerInfo[0] as bigint));
-      const totalHistoricalStake = formatValue(stakerInfo[10] as bigint);
-      const levelInfo = calculateLevel(amount);
-      const stakeInfo = processStakeInfo(stakerInfo);
+      try {
+        const amount = Number(formatValue(stakerInfo[0] as bigint));
+        const totalHistoricalStake = formatValue(stakerInfo[10] as bigint);
+        const levelInfo = calculateLevel(amount);
+        const stakeInfoResult = await processStakeInfo(stakerInfo);
 
-      const stats: UserStats = {
-        totalStaked: amount.toString(),
-        level: levelInfo.level,
-        levelProgress: levelInfo.progress,
-        nextLevelThreshold: levelInfo.next.toLocaleString(),
-        isActive: stakerInfo[12] as boolean,
-        referrer: stakerInfo[7] as Address,
-        referralCount: Number(stakerInfo[8]),
-        referrals: referralsData,
-        stakeInfo,
-        referralLevels,
-        totalHistoricalStake
-      };
+        if (!stakeInfoResult) {
+          logger.warn('Failed to process stake info');
+          return undefined;
+        }
 
-      logger.debug('Processed user stats:', stats);
-      return stats;
-    } catch (error) {
-      logger.error('Error processing user stats', error);
-      return undefined;
-    }
+        const stats: UserStats = {
+          totalStaked: amount.toString(),
+          level: levelInfo.level,
+          levelProgress: levelInfo.progress,
+          nextLevelThreshold: levelInfo.next.toLocaleString(),
+          isActive: stakerInfo[12] as boolean,
+          referrer: stakerInfo[7] as Address,
+          referralCount: Number(stakerInfo[8]),
+          referrals: referralsData,
+          stakeInfo: stakeInfoResult,
+          referralLevels,
+          totalHistoricalStake
+        };
+
+        logger.debug('Processed user stats:', stats);
+        return stats;
+      } catch (error) {
+        logger.error('Error processing user stats', error);
+        return undefined;
+      }
   }, [stakerInfo, referralsData, referralLevels]);
 
+  const [userStatsData, setUserStatsData] = useState<UserStats | undefined>(undefined);
+
+  useEffect(() => {
+    const loadUserStats = async () => {
+      const stats = await processUserStats();
+      setUserStatsData(stats);
+    };
+    loadUserStats();
+  }, [processUserStats]);
+  
   // Return hook data
   return {
     // Global statistics
@@ -973,7 +993,7 @@ export function useZorium() {
     },
     
     // User specific data
-    userStats: processUserStats(),
+    userStats: userStatsData,
     
     // Actions
     actions: {
