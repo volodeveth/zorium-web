@@ -196,7 +196,7 @@ export default function ReferralClient() {
     setMounted(true);
   }, []);
 
-  const referralLink = `https://zorium.xyz?ref=${address}`;
+  const referralLink = `Coming Soon`;
   const activeReferrals = referralInfo.referrals?.filter(r => r.isActive) || [];
   
   // Calculate total referral bonus

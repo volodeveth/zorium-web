@@ -155,7 +155,7 @@ export default function HomeClient() {
         />
         <StatsCard 
           title="Total Users" 
-          value="Coming Soon" 
+          value="More than 10K" 
           icon={<Users className="w-8 h-8 text-white" />} 
         />
         <StatsCard 
